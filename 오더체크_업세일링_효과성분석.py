@@ -67,8 +67,7 @@ df_pg_sales_history = pd.DataFrame(outlist, columns = ['sales_no', 'cust_id', 's
                                                         , 'process_state', 'sales_cost', 'detail_memo', 'unique_memo', 'insert_id'
                                                         , 'insert_date', 'sales_activities'])
 
-df_pg_sales_history.info()
-df_pg_sales_history.head()
+
 # Maria
 ### 마지막 index 추출
 # 데이터베이스 연결
@@ -105,9 +104,9 @@ for utf_ in result :
 
 df_pg_sales_history_salesno = pd.DataFrame(outlist, columns = ['sales_no_index'])
 
-df_pg_sales_history_salesno
+
 max_sales_no = df_pg_sales_history_salesno.loc[0, 'sales_no_index']
-max_sales_no
+
 ## 고객정보
 # 데이터베이스 연결
 msdb_ = pymysql.connect(
@@ -162,7 +161,6 @@ for utf_ in result :
 
 
 df_cust_info = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '지역구', '업종', '가입일', '첫발주일'])
-
 
 ## toi
 # 데이터베이스 연결
@@ -277,7 +275,6 @@ df_cust_order_complete['매출'] = df_cust_order_complete['order_pay'] * df_cust
 
 ### 업장의 주문일별 매출
 df_cust_orderday = df_cust_order_complete[['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', '매출']].groupby(['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일'], as_index=0).sum()
-
 df_cust_orderday['주문일'] = pd.to_datetime(df_cust_orderday['주문일'])
 
 df_pg_sales_history['sales_date_ymd'] = df_pg_sales_history['sales_date'].dt.strftime('%Y-%m-%d')
@@ -461,7 +458,6 @@ def ragne_sales(df):
     return df_range_sales
 
 cust_sales_pg = ragne_sales(df_pg_sales_3col)
-
 ## 주차별 SKU 구하기
 
 df_cust_sku = df_cust_order_complete[['CUST_ID', '주문일', 'PROD_CD']]
@@ -637,7 +633,6 @@ def ragne_sku(df):
 cust_sku_pg = ragne_sku(df_pg_sales_3col)
 
 ## Merge
-
 cust_sales_sku_pg = pd.merge(cust_sales_pg, cust_sku_pg, how='left', on=['sales_no', 'CUST_ID', 'activity_option', 'sales_activities', 'sales_date_ymd'])
 cust_sales_sku_pg_admin = pd.merge(cust_sales_sku_pg, df_pg_sales_history[['sales_no', 'insert_id']], how='left', on= 'sales_no')
 
@@ -660,7 +655,7 @@ update_table_fn.rename(columns={'매장명':'BUSINESS_NAME'
 ### 중복 sales_no 제거
 df_insert_table = update_table_fn[update_table_fn['sales_no'] > max_sales_no]
 
-# test
+
 # Connect DB
 import urllib.parse
 from sqlalchemy import create_engine
