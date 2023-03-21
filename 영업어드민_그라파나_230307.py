@@ -163,7 +163,6 @@ for utf_ in result :
 
 df_cust_info = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '지역구', '업종', '가입일', '첫발주일'])
 
-df_cust_info
 
 ## toi
 # 데이터베이스 연결
@@ -212,7 +211,7 @@ for utf_ in result :
 
 df_toi_raw = pd.DataFrame(outlist, columns = ['ORDER_NO', 'PROD_CD', 'order_pay', 'prod_order_cnt', 'coupon_price'])
 
-df_toi_raw
+
 ## 주문일, 주문번호
 # 데이터베이스 연결
 msdb_ = pymysql.connect(
@@ -269,32 +268,30 @@ for utf_ in result :
 
 df_cust_order = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', 'ORDER_NO'])
 
-df_cust_order
+
 df_cust_order_prod = pd.merge(df_cust_order, df_toi_raw, how='left', on='ORDER_NO')
 df_order_cancel = df_cust_order_prod[df_cust_order_prod['PROD_CD'].isna()]
 df_cust_order_complete = df_cust_order_prod[~ df_cust_order_prod['PROD_CD'].isna()]
-df_cust_order_complete
+
 df_cust_order_complete['매출'] = df_cust_order_complete['order_pay'] * df_cust_order_complete['prod_order_cnt'] - df_cust_order_complete['coupon_price']
-df_cust_order_complete
+
 ### 업장의 주문일별 매출
 df_cust_orderday = df_cust_order_complete[['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', '매출']].groupby(['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일'], as_index=0).sum()
-df_cust_orderday.info()
+
 df_cust_orderday['주문일'] = pd.to_datetime(df_cust_orderday['주문일'])
-df_cust_orderday
+
 df_pg_sales_history['sales_date_ymd'] = df_pg_sales_history['sales_date'].dt.strftime('%Y-%m-%d')
 df_pg_sales_history['sales_date'] = pd.to_datetime(df_pg_sales_history['sales_date'])
 df_pg_sales_history['sales_date_ymd'] = pd.to_datetime(df_pg_sales_history['sales_date_ymd'])
 df_pg_sales_3col = df_pg_sales_history[['sales_no', 'cust_id', 'sales_date_ymd', 'activity_option', 'sales_activities']]
 df_pg_sales_3col.columns = ['sales_no','CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']
-df_pg_sales_3col.head()
-len(df_pg_sales_3col)
+
 from datetime import datetime, timedelta
 start_p7 = df_pg_sales_3col.loc[0,'sales_date_ymd'] 
 end_p7 = df_pg_sales_3col.loc[0,'sales_date_ymd'] + timedelta(days=6)
-print(start_p7)
-print(end_p7)
+
 temp_df = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p7) & (df_cust_orderday['주문일'] <= end_p7) & (df_cust_orderday['CUST_ID']== '2108701169')]
-temp_df['매출'].sum()
+
 ## 주차별 매출 구하기
 def ragne_sales(df):
     sales_no_list = []
@@ -464,12 +461,12 @@ def ragne_sales(df):
     return df_range_sales
 
 cust_sales_pg = ragne_sales(df_pg_sales_3col)
-cust_sales_pg.head()
+
 ## 주차별 SKU 구하기
-df_cust_order_complete
+
 df_cust_sku = df_cust_order_complete[['CUST_ID', '주문일', 'PROD_CD']]
 df_cust_sku.reset_index(inplace=True, drop=True)
-df_cust_sku
+
 def ragne_sku(df):
     cust_id_list = []
     sales_no_list = []
@@ -638,16 +635,15 @@ def ragne_sku(df):
     return df_range_sku
 
 cust_sku_pg = ragne_sku(df_pg_sales_3col)
-cust_sku_pg.head()
+
 ## Merge
-df_pg_sales_history.head()
+
 cust_sales_sku_pg = pd.merge(cust_sales_pg, cust_sku_pg, how='left', on=['sales_no', 'CUST_ID', 'activity_option', 'sales_activities', 'sales_date_ymd'])
 cust_sales_sku_pg_admin = pd.merge(cust_sales_sku_pg, df_pg_sales_history[['sales_no', 'insert_id']], how='left', on= 'sales_no')
-cust_sales_sku_pg_admin.head()
+
 update_table = pd.merge(cust_sales_sku_pg_admin, df_cust_info, how='left', on='CUST_ID')
 update_table_fn = update_table[~update_table['매장명'].isna()]
-update_table_fn.head()
-update_table_fn.info()
+
 update_table_fn = update_table_fn[['sales_no', 'CUST_ID', '매장명', '업종', '지역구', '가입일', '첫발주일', 'insert_id', 'activity_option', 'sales_activities', 'sales_date_ymd'
                                    , 'm8w_sales', 'm8w_sku', 'm7w_sales', 'm7w_sku', 'm6w_sales', 'm6w_sku', 'm5w_sales', 'm5w_sku'
                                    , 'm4w_sales', 'm4w_sku', 'm3w_sales', 'm3w_sku', 'm2w_sales', 'm2w_sku', 'm1w_sales', 'm1w_sku'
@@ -660,13 +656,11 @@ update_table_fn.rename(columns={'매장명':'BUSINESS_NAME'
                                 , '가입일' : 'REG_DATE_TC'
                                 , '첫발주일' : 'FIRST_ORDER_DATE'
                                 }, inplace=True)
-update_table_fn.head()
-update_table_fn.info()
-update_table_fn.tail()
+
 ### 중복 sales_no 제거
 df_insert_table = update_table_fn[update_table_fn['sales_no'] > max_sales_no]
-df_insert_table
-# - test
+
+# test
 # Connect DB
 import urllib.parse
 from sqlalchemy import create_engine
