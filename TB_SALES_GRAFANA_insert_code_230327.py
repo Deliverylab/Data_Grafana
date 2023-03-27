@@ -67,7 +67,7 @@ df_pg_sales_history = pd.DataFrame(outlist, columns = ['sales_no', 'cust_id', 's
                                                         , 'process_state', 'sales_cost', 'detail_memo', 'unique_memo', 'insert_id'
                                                         , 'insert_date', 'sales_activities'])
 
-df_pg_sales_history.head()
+
 # Maria
 ## 마지막 index 추출
 # - sales_no 최댓값
@@ -668,3 +668,5 @@ db = 'orderherodl'
 
 engine = create_engine(f'mysql+pymysql://{user}:{pwd}@{host}/{db}')
 update_table_fn.to_sql('TB_SALES_GRAFANA', con=engine, if_exists='append', index=False)
+
+print('Done')
