@@ -1,672 +1,3467 @@
-import pandas as pd
-import numpy as np
-# from sqlalchemy import create_engine
-from functools import reduce
-import warnings
-import pymysql
-import psycopg2
-warnings.filterwarnings(action='ignore')
-pd.set_option('display.max_rows', 300)
-pd.set_option('display.max_columns', 300)
-from datetime import datetime, timedelta
-
-now = datetime.now()
-print("현재 :" , now)	# 현재 : 2021-01-09 19:41:03.645702
-before_one_day = now - timedelta(days=1)
-print("1일 전 :", before_one_day)	# 1일 전 : 2021-01-08 19:41:03.645702
-after_one_day = now + timedelta(days=1)
-print("1일 후 :", after_one_day)	# 1일 후 : 2021-01-10 19:41:03.645702
-# PG
-# 데이터베이스 연결
-msdb_ = psycopg2.connect (
-    host = '175.126.38.47',
-    database = 'db_base',
-    user = 'orderhero',
-    password = 'OhejGL@JFH2023',
-    port = '5432'
-    )
-
-
-
-
-my_sql = f"""
-SELECT * FROM sales_history
-"""
-
-with msdb_.cursor() as cursor :
-    cursor.execute(my_sql)
-    result = cursor.fetchall()
-    msdb_.commit()
-    cursor.close()
-msdb_.close()
-
-    
-
-
-outlist = []
-for utf_ in result :
-    col1 = utf_[0]
-    col2 = utf_[1]
-    col3 = utf_[2]
-    col4 = utf_[3]
-    col5 = utf_[4]
-    col6 = utf_[5]
-    col7 = utf_[6]
-    col8 = utf_[7]
-    col9 = utf_[8]
-    col10 = utf_[9]
-    col11 = utf_[10]
-    col12 = utf_[11]
-   
-
-
-    outlist.append([col1, col2, col3, col4, col5, col6, col7, col8, col9, col10, col11, col12])
-
-
-df_pg_sales_history = pd.DataFrame(outlist, columns = ['sales_no', 'cust_id', 'sales_date', 'activity_option', 'count'
-                                                        , 'process_state', 'sales_cost', 'detail_memo', 'unique_memo', 'insert_id'
-                                                        , 'insert_date', 'sales_activities'])
-
-
-# Maria
-## 마지막 index 추출
-# - sales_no 최댓값
-# 데이터베이스 연결
-msdb_ = pymysql.connect(
-    user='orderherodl', # 추후 읽기 전용으로 수정 필요 
-    passwd='OhejGL@JFH2023',
-    host='orderherodl.cafe24.com',
-    db='orderherodl',
-    charset='utf8',
-#     use_unicode=True
-)
-
-
-my_sql = f"""
-SELECT max(sales_no) FROM TB_SALES_GRAFANA
-"""
-
-with msdb_.cursor() as cursor :
-    cursor.execute(my_sql)
-    result = cursor.fetchall()
-    msdb_.commit()
-    cursor.close()
-msdb_.close()
-
-    
-
-
-outlist = []
-for utf_ in result :
-    col1 = utf_[0]
-
-    outlist.append([col1])
-
-
-df_pg_sales_history_salesno = pd.DataFrame(outlist, columns = ['sales_no_index'])
-max_sales_no = df_pg_sales_history_salesno.loc[0, 'sales_no_index']
-
-## 고객정보
-# 데이터베이스 연결
-msdb_ = pymysql.connect(
-    user='orderherodl', # 추후 읽기 전용으로 수정 필요 
-    passwd='OhejGL@JFH2023',
-    host='orderherodl.cafe24.com',
-    db='orderherodl',
-    charset='utf8',
-#     use_unicode=True
-)
-
-
-my_sql = f"""
-SELECT tc.CUST_ID
-, tc.business_name
-, tc.AREA_GU
-, tec.ER_CTG_NAME
-, DATE_FORMAT(tc.REG_DATE, '%Y-%m-%d')
-, min(to2.REG_DATE)
-FROM TB_CUST tc
-INNER JOIN TB_ER_CTG tec ON tec.ER_CTG_CD = tc.CTG_CD
-LEFT JOIN TB_ORDER to2 ON to2.CUST_ID = tc.CUST_ID
-WHERE DELIV_POSITION IS NOT NULL
-AND DELIV_POSITION != ''
-AND test_yn = 'N'
-GROUP BY tc.CUST_ID
-"""
-
-with msdb_.cursor() as cursor :
-    cursor.execute(my_sql)
-    result = cursor.fetchall()
-    msdb_.commit()
-    cursor.close()
-msdb_.close()
-
-    
-
-
-outlist = []
-for utf_ in result :
-    col1 = utf_[0].decode('UTF-8')
-    col2 = utf_[1].decode('UTF-8')
-    col3 = utf_[2].decode('UTF-8')
-    col4 = utf_[3].decode('UTF-8')
-    col5 = utf_[4].decode('UTF-8')
-    col6 = utf_[5]
-    
-   
-
-
-    outlist.append([col1, col2, col3, col4, col5, col6])
-
-
-df_cust_info = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '지역구', '업종', '가입일', '첫발주일'])
-
-## toi
-# 데이터베이스 연결
-msdb_ = pymysql.connect(
-    user='orderherodl', # 추후 읽기 전용으로 수정 필요 
-    passwd='OhejGL@JFH2023',
-    host='orderherodl.cafe24.com',
-    db='orderherodl',
-    charset='utf8',
-#     use_unicode=True
-)
-
-
-my_sql = f"""
-SELECT order_no 
-, PROD_CD 
-, order_pay
-, prod_order_cnt
-, coupon_price
-FROM TB_ORDER_ITEM
-WHERE ARRIVE_DATE >= '2022-11-01' 
-"""
-
-with msdb_.cursor() as cursor :
-    cursor.execute(my_sql)
-    result = cursor.fetchall()
-    msdb_.commit()
-    cursor.close()
-msdb_.close()
-
-    
-
-
-outlist = []
-for utf_ in result :
-    col1 = utf_[0]
-    col2 = utf_[1].decode('UTF-8')
-    col3 = utf_[2]
-    col4 = utf_[3]
-    col5 = utf_[4]
-   
-
-
-    outlist.append([col1, col2, col3, col4, col5])
-
-
-df_toi_raw = pd.DataFrame(outlist, columns = ['ORDER_NO', 'PROD_CD', 'order_pay', 'prod_order_cnt', 'coupon_price'])
-
-## 주문일, 주문번호
-# 데이터베이스 연결
-msdb_ = pymysql.connect(
-    user='orderherodl', # 추후 읽기 전용으로 수정 필요 
-    passwd='OhejGL@JFH2023',
-    host='orderherodl.cafe24.com',
-    db='orderherodl',
-    charset='utf8',
-#     use_unicode=True
-)
-
-
-my_sql = f"""
-SELECT tc.CUST_ID
-, tc.BUSINESS_NAME
-, DATE_FORMAT(tc.REG_DATE, '%Y-%m-%d')
-, tc.AREA_GU
-, tec.ER_CTG_NAME 
-, to2.REG_DATE
-, to2.ORDER_NO
-FROM (SELECT * FROM TB_ORDER
-	  WHERE REG_DATE >= '2022-11-01') to2 
-INNER JOIN (SELECT * FROM TB_CUST
-			WHERE test_yn = 'N'
-			AND DELIV_POSITION IS NOT NULL
-			AND DELIV_POSITION != '') tc ON tc.CUST_ID = to2.CUST_ID
-LEFT JOIN TB_ER_CTG tec ON tec.ER_CTG_CD = tc.CTG_CD
-"""
-
-with msdb_.cursor() as cursor :
-    cursor.execute(my_sql)
-    result = cursor.fetchall()
-    msdb_.commit()
-    cursor.close()
-msdb_.close()
-
-    
-
-
-outlist = []
-for utf_ in result :
-    col1 = utf_[0].decode('UTF-8')
-    col2 = utf_[1].decode('UTF-8')
-    col3 = utf_[2].decode('UTF-8')
-    col4 = utf_[3].decode('UTF-8')
-    col5 = utf_[4].decode('UTF-8')
-    col6 = utf_[5]
-    col7 = utf_[6]
-   
-
-
-    outlist.append([col1, col2, col3, col4, col5, col6, col7])
-
-
-df_cust_order = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', 'ORDER_NO'])
-
-df_cust_order_prod = pd.merge(df_cust_order, df_toi_raw, how='left', on='ORDER_NO')
-df_order_cancel = df_cust_order_prod[df_cust_order_prod['PROD_CD'].isna()]
-df_cust_order_complete = df_cust_order_prod[~ df_cust_order_prod['PROD_CD'].isna()]
-
-df_cust_order_complete['매출'] = df_cust_order_complete['order_pay'] * df_cust_order_complete['prod_order_cnt'] - df_cust_order_complete['coupon_price']
-
-### 업장의 주문일별 매출
-df_cust_orderday = df_cust_order_complete[['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', '매출']].groupby(['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일'], as_index=0).sum()
-
-df_cust_orderday['주문일'] = pd.to_datetime(df_cust_orderday['주문일'])
-
-df_pg_sales_history['sales_date_ymd'] = df_pg_sales_history['sales_date'].dt.strftime('%Y-%m-%d')
-df_pg_sales_history['sales_date'] = pd.to_datetime(df_pg_sales_history['sales_date'])
-df_pg_sales_history['sales_date_ymd'] = pd.to_datetime(df_pg_sales_history['sales_date_ymd'])
-df_pg_sales_3col = df_pg_sales_history[['sales_no', 'cust_id', 'sales_date_ymd', 'activity_option', 'sales_activities']]
-df_pg_sales_3col.columns = ['sales_no','CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']
-
-# 새롭게 추가된 영업활동 row 추출
-df_pg_recent = df_pg_sales_3col[df_pg_sales_3col['sales_no'] > max_sales_no]
-df_pg_recent.reset_index(inplace=True, drop=True)
-
-# 주차별 매출 구하기
-def ragne_sales(df):
-    sales_no_list = []
-    cust_id_list = []
-    sales_param_list = []
-    activities_list = []
-    activ_day_list = []
-
-    p1w_sales_list = []
-    p2w_sales_list = []
-    p3w_sales_list = []
-    p4w_sales_list = []
-    p5w_sales_list = []
-    p6w_sales_list = []
-    p7w_sales_list = []
-    p8w_sales_list = []
-
-    m1w_sales_list = []
-    m2w_sales_list = []
-    m3w_sales_list = []
-    m4w_sales_list = []
-    m5w_sales_list = []
-    m6w_sales_list = []
-    m7w_sales_list = []
-    m8w_sales_list = []
-
-    for i in range(len(df)):
-
-        ## 세일링 이후
-
-        start_p1w = df.loc[i,'sales_date_ymd'] 
-        end_p1w = df.loc[i,'sales_date_ymd'] + timedelta(days=6)
-        temp_df_p1w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p1w) & (df_cust_orderday['주문일'] <= end_p1w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p1w_sales = temp_df_p1w['매출'].sum()
-
-        start_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=7)
-        end_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=13)
-        temp_df_p2w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p2w) & (df_cust_orderday['주문일'] <= end_p2w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p2w_sales = temp_df_p2w['매출'].sum()
-
-        start_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=14)
-        end_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=20)
-        temp_df_p3w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p3w) & (df_cust_orderday['주문일'] <= end_p3w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p3w_sales = temp_df_p3w['매출'].sum()
-
-        start_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=21)
-        end_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=27)
-        temp_df_p4w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p4w) & (df_cust_orderday['주문일'] <= end_p4w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p4w_sales = temp_df_p4w['매출'].sum()
-
-        start_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=28)
-        end_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=34)
-        temp_df_p5w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p5w) & (df_cust_orderday['주문일'] <= end_p5w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p5w_sales = temp_df_p5w['매출'].sum()
-
-        start_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=35)
-        end_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=41)
-        temp_df_p6w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p6w) & (df_cust_orderday['주문일'] <= end_p6w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p6w_sales = temp_df_p6w['매출'].sum()
-
-        start_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=42)
-        end_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=48)
-        temp_df_p7w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p7w) & (df_cust_orderday['주문일'] <= end_p7w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p7w_sales = temp_df_p7w['매출'].sum()
-
-        start_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=49)
-        end_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=55)
-        temp_df_p8w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p8w) & (df_cust_orderday['주문일'] <= end_p8w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p8w_sales = temp_df_p8w['매출'].sum()
-
-
-        ## 세일링 이전 
-
-        start_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=7)
-        end_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=1)
-        temp_df_m1w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m1w) & (df_cust_orderday['주문일'] <= end_m1w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m1w_sales = temp_df_m1w['매출'].sum()
-
-        start_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=14)
-        end_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=8)
-        temp_df_m2w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m2w) & (df_cust_orderday['주문일'] <= end_m2w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m2w_sales = temp_df_m2w['매출'].sum()
-
-        start_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=21)
-        end_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=15)
-        temp_df_m3w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m3w) & (df_cust_orderday['주문일'] <= end_m3w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m3w_sales = temp_df_m3w['매출'].sum()
-
-        start_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=28)
-        end_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=22)
-        temp_df_m4w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m4w) & (df_cust_orderday['주문일'] <= end_m4w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m4w_sales = temp_df_m4w['매출'].sum()
-
-        start_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=35)
-        end_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=29)
-        temp_df_m5w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m5w) & (df_cust_orderday['주문일'] <= end_m5w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m5w_sales = temp_df_m5w['매출'].sum()
-
-        start_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=42)
-        end_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=36)
-        temp_df_m6w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m6w) & (df_cust_orderday['주문일'] <= end_m6w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m6w_sales = temp_df_m6w['매출'].sum()
-
-        start_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=49)
-        end_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=43)
-        temp_df_m7w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m7w) & (df_cust_orderday['주문일'] <= end_m7w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m7w_sales = temp_df_m7w['매출'].sum()
-
-        start_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=56)
-        end_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=50)
-        temp_df_m8w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m8w) & (df_cust_orderday['주문일'] <= end_m8w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m8w_sales = temp_df_m8w['매출'].sum()
-
-
-        ## 값 리스트에 넣기
-
-        sales_no_list.append(df.loc[i, 'sales_no'])
-        cust_id_list.append(df.loc[i,'CUST_ID'])
-        sales_param_list.append(df.loc[i, 'activity_option'])
-        activ_day_list.append(df.loc[i, 'sales_date_ymd'])
-        activities_list.append(df.loc[i, 'sales_activities'])
-
-        p1w_sales_list.append(p1w_sales)
-        p2w_sales_list.append(p2w_sales)
-        p3w_sales_list.append(p3w_sales)
-        p4w_sales_list.append(p4w_sales)
-        p5w_sales_list.append(p5w_sales)
-        p6w_sales_list.append(p6w_sales)
-        p7w_sales_list.append(p7w_sales)
-        p8w_sales_list.append(p8w_sales)
-
-        m1w_sales_list.append(m1w_sales)
-        m2w_sales_list.append(m2w_sales)
-        m3w_sales_list.append(m3w_sales)
-        m4w_sales_list.append(m4w_sales)
-        m5w_sales_list.append(m5w_sales)
-        m6w_sales_list.append(m6w_sales)
-        m7w_sales_list.append(m7w_sales)
-        m8w_sales_list.append(m8w_sales)
-
-
-    ## DF 생성
-    df_range_sales = pd.DataFrame( {'sales_no' : sales_no_list
-                                        , 'CUST_ID' : cust_id_list
-                                        , 'activity_option' : sales_param_list
-                                        , 'sales_activities' : activities_list
-                                        , 'sales_date_ymd' : activ_day_list
-                                        , 'm8w_sales' : m8w_sales_list
-                                        , 'm7w_sales' : m7w_sales_list
-                                        , 'm6w_sales' : m6w_sales_list
-                                        , 'm5w_sales' : m5w_sales_list
-                                        , 'm4w_sales' : m4w_sales_list
-                                        , 'm3w_sales' : m3w_sales_list
-                                        , 'm2w_sales' : m2w_sales_list
-                                        , 'm1w_sales' : m1w_sales_list        
-                                        , 'p1w_sales' : p1w_sales_list
-                                        , 'p2w_sales' : p2w_sales_list
-                                        , 'p3w_sales' : p3w_sales_list
-                                        , 'p4w_sales' : p4w_sales_list
-                                        , 'p5w_sales' : p5w_sales_list
-                                        , 'p6w_sales' : p6w_sales_list
-                                        , 'p7w_sales' : p7w_sales_list
-                                        , 'p8w_sales' : p8w_sales_list
-                                        }
-                                    )
-        
-    return df_range_sales
-
-cust_sales_pg = ragne_sales(df_pg_recent)
-
-# 주차별 SKU 구하기
-
-pg_cid_list = cust_sales_pg['CUST_ID'].unique().tolist()
-
-df_pg_sales_3col = cust_sales_pg[['sales_no', 'CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']]
-df_pg_sales_3col.columns = ['sales_no','CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']
-
-df_cust_order_complete_filter =  df_cust_order_complete[df_cust_order_complete['CUST_ID'].isin(pg_cid_list)]
-
-df_cust_sku = df_cust_order_complete_filter[['CUST_ID', '주문일', 'PROD_CD']]
-df_cust_sku.reset_index(inplace=True, drop=True)
-
-def ragne_sku(df):
-    cust_id_list = []
-    sales_no_list = []
-    sku_param_list = []
-    activities_list = []
-    activ_day_list = []
-
-    p1w_sku_list = []
-    p2w_sku_list = []
-    p3w_sku_list = []
-    p4w_sku_list = []
-    p5w_sku_list = []
-    p6w_sku_list = []
-    p7w_sku_list = []
-    p8w_sku_list = []
-
-    m1w_sku_list = []
-    m2w_sku_list = []
-    m3w_sku_list = []
-    m4w_sku_list = []
-    m5w_sku_list = []
-    m6w_sku_list = []
-    m7w_sku_list = []
-    m8w_sku_list = []
-
-    for i in range(len(df)):
-
-        ## 세일링 이후
-
-        start_p1w = df.loc[i,'sales_date_ymd'] 
-        end_p1w = df.loc[i,'sales_date_ymd'] + timedelta(days=6)
-        temp_df_p1w = df_cust_sku[(df_cust_sku['주문일'] >= start_p1w) & (df_cust_sku['주문일'] <= end_p1w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p1w_sku = temp_df_p1w['PROD_CD'].nunique()
-
-        start_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=7)
-        end_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=13)
-        temp_df_p2w = df_cust_sku[(df_cust_sku['주문일'] >= start_p2w) & (df_cust_sku['주문일'] <= end_p2w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p2w_sku = temp_df_p2w['PROD_CD'].nunique()
-
-        start_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=14)
-        end_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=20)
-        temp_df_p3w = df_cust_sku[(df_cust_sku['주문일'] >= start_p3w) & (df_cust_sku['주문일'] <= end_p3w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p3w_sku = temp_df_p3w['PROD_CD'].nunique()
-
-        start_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=21)
-        end_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=27)
-        temp_df_p4w = df_cust_sku[(df_cust_sku['주문일'] >= start_p4w) & (df_cust_sku['주문일'] <= end_p4w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p4w_sku = temp_df_p4w['PROD_CD'].nunique()
-
-        start_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=28)
-        end_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=34)
-        temp_df_p5w = df_cust_sku[(df_cust_sku['주문일'] >= start_p5w) & (df_cust_sku['주문일'] <= end_p5w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p5w_sku = temp_df_p5w['PROD_CD'].nunique()
-
-        start_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=35)
-        end_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=41)
-        temp_df_p6w = df_cust_sku[(df_cust_sku['주문일'] >= start_p6w) & (df_cust_sku['주문일'] <= end_p6w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p6w_sku = temp_df_p6w['PROD_CD'].nunique()
-
-        start_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=42)
-        end_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=48)
-        temp_df_p7w = df_cust_sku[(df_cust_sku['주문일'] >= start_p7w) & (df_cust_sku['주문일'] <= end_p7w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p7w_sku = temp_df_p7w['PROD_CD'].nunique()
-
-        start_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=49)
-        end_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=55)
-        temp_df_p8w = df_cust_sku[(df_cust_sku['주문일'] >= start_p8w) & (df_cust_sku['주문일'] <= end_p8w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        p8w_sku = temp_df_p8w['PROD_CD'].nunique()
-
-
-        ## 세일링 이전 
-
-        start_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=7)
-        end_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=1)
-        temp_df_m1w = df_cust_sku[(df_cust_sku['주문일'] >= start_m1w) & (df_cust_sku['주문일'] <= end_m1w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m1w_sku = temp_df_m1w['PROD_CD'].nunique()
-
-        start_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=14)
-        end_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=8)
-        temp_df_m2w = df_cust_sku[(df_cust_sku['주문일'] >= start_m2w) & (df_cust_sku['주문일'] <= end_m2w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m2w_sku = temp_df_m2w['PROD_CD'].nunique()
-
-        start_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=21)
-        end_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=15)
-        temp_df_m3w = df_cust_sku[(df_cust_sku['주문일'] >= start_m3w) & (df_cust_sku['주문일'] <= end_m3w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m3w_sku = temp_df_m3w['PROD_CD'].nunique()
-
-        start_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=28)
-        end_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=22)
-        temp_df_m4w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m4w) & (df_cust_order_complete['주문일'] <= end_m4w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m4w_sku = temp_df_m4w['PROD_CD'].nunique()
-
-        start_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=35)
-        end_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=29)
-        temp_df_m5w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m5w) & (df_cust_order_complete['주문일'] <= end_m5w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m5w_sku = temp_df_m5w['PROD_CD'].nunique()
-
-        start_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=42)
-        end_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=36)
-        temp_df_m6w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m6w) & (df_cust_order_complete['주문일'] <= end_m6w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m6w_sku = temp_df_m6w['PROD_CD'].nunique()
-
-        start_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=49)
-        end_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=43)
-        temp_df_m7w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m7w) & (df_cust_order_complete['주문일'] <= end_m7w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m7w_sku = temp_df_m7w['PROD_CD'].nunique()
-
-        start_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=56)
-        end_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=50)
-        temp_df_m8w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m8w) & (df_cust_order_complete['주문일'] <= end_m8w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]
-        m8w_sku = temp_df_m8w['PROD_CD'].nunique()
-
-
-        ## 값 리스트에 넣기
-
-        cust_id_list.append(df.loc[i,'CUST_ID'])
-        sales_no_list.append(df.loc[i, 'sales_no'])
-        sku_param_list.append(df.loc[i, 'activity_option'])
-        activities_list.append(df.loc[i, 'sales_activities'])
-        activ_day_list.append(df.loc[i, 'sales_date_ymd'])
-
-        p1w_sku_list.append(p1w_sku)
-        p2w_sku_list.append(p2w_sku)
-        p3w_sku_list.append(p3w_sku)
-        p4w_sku_list.append(p4w_sku)
-        p5w_sku_list.append(p5w_sku)
-        p6w_sku_list.append(p6w_sku)
-        p7w_sku_list.append(p7w_sku)
-        p8w_sku_list.append(p8w_sku)
-
-        m1w_sku_list.append(m1w_sku)
-        m2w_sku_list.append(m2w_sku)
-        m3w_sku_list.append(m3w_sku)
-        m4w_sku_list.append(m4w_sku)
-        m5w_sku_list.append(m5w_sku)
-        m6w_sku_list.append(m6w_sku)
-        m7w_sku_list.append(m7w_sku)
-        m8w_sku_list.append(m8w_sku)
-
-
-    ## DF 생성
-    df_range_sku = pd.DataFrame( {'sales_no' : sales_no_list
-                                        , 'CUST_ID' : cust_id_list
-                                        , 'activity_option' : sku_param_list
-                                        , 'sales_activities' : activities_list
-                                        , 'sales_date_ymd' : activ_day_list
-                                        , 'm8w_sku' : m8w_sku_list
-                                        , 'm7w_sku' : m7w_sku_list
-                                        , 'm6w_sku' : m6w_sku_list
-                                        , 'm5w_sku' : m5w_sku_list
-                                        , 'm4w_sku' : m4w_sku_list
-                                        , 'm3w_sku' : m3w_sku_list
-                                        , 'm2w_sku' : m2w_sku_list
-                                        , 'm1w_sku' : m1w_sku_list        
-                                        , 'p1w_sku' : p1w_sku_list
-                                        , 'p2w_sku' : p2w_sku_list
-                                        , 'p3w_sku' : p3w_sku_list
-                                        , 'p4w_sku' : p4w_sku_list
-                                        , 'p5w_sku' : p5w_sku_list
-                                        , 'p6w_sku' : p6w_sku_list
-                                        , 'p7w_sku' : p7w_sku_list
-                                        , 'p8w_sku' : p8w_sku_list
-                                        }
-                                    )
-        
-    return df_range_sku
-
-cust_sku_pg = ragne_sku(df_pg_sales_3col)
-cust_sales_sku_pg = pd.merge(cust_sales_pg, cust_sku_pg, how='left', on=['sales_no', 'CUST_ID', 'activity_option', 'sales_activities', 'sales_date_ymd'])
-cust_sales_sku_pg_admin = pd.merge(cust_sales_sku_pg, df_pg_sales_history[['sales_no', 'insert_id']], how='left', on= 'sales_no')
-
-update_table = pd.merge(cust_sales_sku_pg_admin, df_cust_info, how='left', on='CUST_ID')
-update_table_fn = update_table[~update_table['매장명'].isna()]
-
-update_table_fn = update_table_fn[['sales_no', 'CUST_ID', '매장명', '업종', '지역구', '가입일', '첫발주일', 'insert_id', 'activity_option', 'sales_activities', 'sales_date_ymd'
-                                   , 'm8w_sales', 'm8w_sku', 'm7w_sales', 'm7w_sku', 'm6w_sales', 'm6w_sku', 'm5w_sales', 'm5w_sku'
-                                   , 'm4w_sales', 'm4w_sku', 'm3w_sales', 'm3w_sku', 'm2w_sales', 'm2w_sku', 'm1w_sales', 'm1w_sku'
-                                   , 'p1w_sales', 'p1w_sku', 'p2w_sales', 'p2w_sku', 'p3w_sales', 'p3w_sku', 'p4w_sales', 'p4w_sku'
-                                   , 'p5w_sales', 'p5w_sku', 'p6w_sales', 'p6w_sku', 'p7w_sales', 'p7w_sku', 'p8w_sales', 'p8w_sku']]
-
-update_table_fn.rename(columns={'매장명':'BUSINESS_NAME'
-                                , '업종': 'ER_CTG_NAME'
-                                , '지역구' : 'AREA_GU'
-                                , '가입일' : 'REG_DATE_TC'
-                                , '첫발주일' : 'FIRST_ORDER_DATE'
-                                }, inplace=True)
-
-# Real
-# Connect DB
-import urllib.parse
-from sqlalchemy import create_engine
-
-
-user = 'orderherodl'
-pwd_ = 'OhejGL@JFH2023'
-pwd = urllib.parse.quote(pwd_)
-host = 'orderherodl.cafe24.com'
-db = 'orderherodl'
-
-engine = create_engine(f'mysql+pymysql://{user}:{pwd}@{host}/{db}')
-update_table_fn.to_sql('TB_SALES_GRAFANA', con=engine, if_exists='append', index=False)
-
-print('Done')
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import pandas as pd\n",
+    "import numpy as np\n",
+    "# from sqlalchemy import create_engine\n",
+    "from functools import reduce\n",
+    "import warnings\n",
+    "import pymysql\n",
+    "import psycopg2\n",
+    "warnings.filterwarnings(action='ignore')\n",
+    "pd.set_option('display.max_rows', 300)\n",
+    "pd.set_option('display.max_columns', 300)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "현재 : 2023-03-27 15:09:12.754028\n",
+      "1일 전 : 2023-03-26 15:09:12.754028\n",
+      "1일 후 : 2023-03-28 15:09:12.754028\n"
+     ]
+    }
+   ],
+   "source": [
+    "from datetime import datetime, timedelta\n",
+    "\n",
+    "now = datetime.now()\n",
+    "print(\"현재 :\" , now)\t# 현재 : 2021-01-09 19:41:03.645702\n",
+    "before_one_day = now - timedelta(days=1)\n",
+    "print(\"1일 전 :\", before_one_day)\t# 1일 전 : 2021-01-08 19:41:03.645702\n",
+    "after_one_day = now + timedelta(days=1)\n",
+    "print(\"1일 후 :\", after_one_day)\t# 1일 후 : 2021-01-10 19:41:03.645702"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# PG"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 데이터베이스 연결\n",
+    "msdb_ = psycopg2.connect (\n",
+    "    host = '175.126.38.47',\n",
+    "    database = 'db_base',\n",
+    "    user = 'orderhero',\n",
+    "    password = 'OhejGL@JFH2023',\n",
+    "    port = '5432'\n",
+    "    )\n",
+    "\n",
+    "\n",
+    "\n",
+    "\n",
+    "my_sql = f\"\"\"\n",
+    "SELECT * FROM sales_history\n",
+    "\"\"\"\n",
+    "\n",
+    "with msdb_.cursor() as cursor :\n",
+    "    cursor.execute(my_sql)\n",
+    "    result = cursor.fetchall()\n",
+    "    msdb_.commit()\n",
+    "    cursor.close()\n",
+    "msdb_.close()\n",
+    "\n",
+    "    \n",
+    "\n",
+    "\n",
+    "outlist = []\n",
+    "for utf_ in result :\n",
+    "    col1 = utf_[0]\n",
+    "    col2 = utf_[1]\n",
+    "    col3 = utf_[2]\n",
+    "    col4 = utf_[3]\n",
+    "    col5 = utf_[4]\n",
+    "    col6 = utf_[5]\n",
+    "    col7 = utf_[6]\n",
+    "    col8 = utf_[7]\n",
+    "    col9 = utf_[8]\n",
+    "    col10 = utf_[9]\n",
+    "    col11 = utf_[10]\n",
+    "    col12 = utf_[11]\n",
+    "   \n",
+    "\n",
+    "\n",
+    "    outlist.append([col1, col2, col3, col4, col5, col6, col7, col8, col9, col10, col11, col12])\n",
+    "\n",
+    "\n",
+    "df_pg_sales_history = pd.DataFrame(outlist, columns = ['sales_no', 'cust_id', 'sales_date', 'activity_option', 'count'\n",
+    "                                                        , 'process_state', 'sales_cost', 'detail_memo', 'unique_memo', 'insert_id'\n",
+    "                                                        , 'insert_date', 'sales_activities'])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>cust_id</th>\n",
+       "      <th>sales_date</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>count</th>\n",
+       "      <th>process_state</th>\n",
+       "      <th>sales_cost</th>\n",
+       "      <th>detail_memo</th>\n",
+       "      <th>unique_memo</th>\n",
+       "      <th>insert_id</th>\n",
+       "      <th>insert_date</th>\n",
+       "      <th>sales_activities</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2108701169</td>\n",
+       "      <td>2023-01-12 12:00:00</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>1</td>\n",
+       "      <td>in_processing</td>\n",
+       "      <td>0</td>\n",
+       "      <td>품목 확장 목적 방문 / 1.17일 추가 미팅예정</td>\n",
+       "      <td></td>\n",
+       "      <td>messi</td>\n",
+       "      <td>2023-01-17 11:01:26.023678</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>0105639738</td>\n",
+       "      <td>2023-01-17 12:00:00</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>1</td>\n",
+       "      <td>in_processing</td>\n",
+       "      <td>100</td>\n",
+       "      <td>활동 내용 테스트&lt;br&gt;엔터 엔터 엔터&lt;br&gt;</td>\n",
+       "      <td></td>\n",
+       "      <td>zeus</td>\n",
+       "      <td>2023-01-17 14:13:01.700220</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1585900160</td>\n",
+       "      <td>2023-01-17 12:00:00</td>\n",
+       "      <td>오더 체크</td>\n",
+       "      <td>1</td>\n",
+       "      <td>in_processing</td>\n",
+       "      <td>0</td>\n",
+       "      <td>아소비바 / 첫 배송 오더체크 / 신촌점 동시 운영중으로 큰 이슈 없음 확인 / 오...</td>\n",
+       "      <td></td>\n",
+       "      <td>owne</td>\n",
+       "      <td>2023-01-17 17:14:31.716350</td>\n",
+       "      <td>단순방문</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>6</td>\n",
+       "      <td>8890302509</td>\n",
+       "      <td>2023-01-17 12:00:00</td>\n",
+       "      <td>고객 케어</td>\n",
+       "      <td>0</td>\n",
+       "      <td>done</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1. 신규 업장 오픈 예정&lt;br&gt; - 일식, 이자카야 업종&lt;br&gt; - 설 이후 예정</td>\n",
+       "      <td></td>\n",
+       "      <td>orderherom</td>\n",
+       "      <td>2023-01-17 17:27:53.790581</td>\n",
+       "      <td>단순방문</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>7</td>\n",
+       "      <td>2023165563</td>\n",
+       "      <td>2023-01-17 15:00:00</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>0</td>\n",
+       "      <td>before_processing</td>\n",
+       "      <td>0</td>\n",
+       "      <td>1. 최근 단가, 품질 이슈 상품 조사&lt;br&gt; - 밀락골드: 어제 5800원, 오늘...</td>\n",
+       "      <td></td>\n",
+       "      <td>orderherom</td>\n",
+       "      <td>2023-01-17 17:31:56.309482</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     cust_id          sales_date activity_option  count  \\\n",
+       "0         1  2108701169 2023-01-12 12:00:00           품목 확장      1   \n",
+       "1         2  0105639738 2023-01-17 12:00:00           품목 확장      1   \n",
+       "2         3  1585900160 2023-01-17 12:00:00           오더 체크      1   \n",
+       "3         6  8890302509 2023-01-17 12:00:00           고객 케어      0   \n",
+       "4         7  2023165563 2023-01-17 15:00:00           품목 확장      0   \n",
+       "\n",
+       "       process_state  sales_cost  \\\n",
+       "0      in_processing           0   \n",
+       "1      in_processing         100   \n",
+       "2      in_processing           0   \n",
+       "3               done           0   \n",
+       "4  before_processing           0   \n",
+       "\n",
+       "                                         detail_memo unique_memo   insert_id  \\\n",
+       "0                        품목 확장 목적 방문 / 1.17일 추가 미팅예정                   messi   \n",
+       "1                          활동 내용 테스트<br>엔터 엔터 엔터<br>                    zeus   \n",
+       "2  아소비바 / 첫 배송 오더체크 / 신촌점 동시 운영중으로 큰 이슈 없음 확인 / 오...                    owne   \n",
+       "3     1. 신규 업장 오픈 예정<br> - 일식, 이자카야 업종<br> - 설 이후 예정              orderherom   \n",
+       "4  1. 최근 단가, 품질 이슈 상품 조사<br> - 밀락골드: 어제 5800원, 오늘...              orderherom   \n",
+       "\n",
+       "                 insert_date sales_activities  \n",
+       "0 2023-01-17 11:01:26.023678             품목수취  \n",
+       "1 2023-01-17 14:13:01.700220             품목수취  \n",
+       "2 2023-01-17 17:14:31.716350             단순방문  \n",
+       "3 2023-01-17 17:27:53.790581             단순방문  \n",
+       "4 2023-01-17 17:31:56.309482             품목수취  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_pg_sales_history.head()"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Maria"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 마지막 index 추출\n",
+    "- sales_no 최댓값"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 데이터베이스 연결\n",
+    "msdb_ = pymysql.connect(\n",
+    "    user='orderherodl', # 추후 읽기 전용으로 수정 필요 \n",
+    "    passwd='OhejGL@JFH2023',\n",
+    "    host='orderherodl.cafe24.com',\n",
+    "    db='orderherodl',\n",
+    "    charset='utf8',\n",
+    "#     use_unicode=True\n",
+    ")\n",
+    "\n",
+    "\n",
+    "my_sql = f\"\"\"\n",
+    "SELECT max(sales_no) FROM TB_SALES_GRAFANA\n",
+    "\"\"\"\n",
+    "\n",
+    "with msdb_.cursor() as cursor :\n",
+    "    cursor.execute(my_sql)\n",
+    "    result = cursor.fetchall()\n",
+    "    msdb_.commit()\n",
+    "    cursor.close()\n",
+    "msdb_.close()\n",
+    "\n",
+    "    \n",
+    "\n",
+    "\n",
+    "outlist = []\n",
+    "for utf_ in result :\n",
+    "    col1 = utf_[0]\n",
+    "\n",
+    "    outlist.append([col1])\n",
+    "\n",
+    "\n",
+    "df_pg_sales_history_salesno = pd.DataFrame(outlist, columns = ['sales_no_index'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "380"
+      ]
+     },
+     "execution_count": 6,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "max_sales_no = df_pg_sales_history_salesno.loc[0, 'sales_no_index']\n",
+    "max_sales_no"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 고객정보"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 데이터베이스 연결\n",
+    "msdb_ = pymysql.connect(\n",
+    "    user='orderherodl', # 추후 읽기 전용으로 수정 필요 \n",
+    "    passwd='OhejGL@JFH2023',\n",
+    "    host='orderherodl.cafe24.com',\n",
+    "    db='orderherodl',\n",
+    "    charset='utf8',\n",
+    "#     use_unicode=True\n",
+    ")\n",
+    "\n",
+    "\n",
+    "my_sql = f\"\"\"\n",
+    "SELECT tc.CUST_ID\n",
+    ", tc.business_name\n",
+    ", tc.AREA_GU\n",
+    ", tec.ER_CTG_NAME\n",
+    ", DATE_FORMAT(tc.REG_DATE, '%Y-%m-%d')\n",
+    ", min(to2.REG_DATE)\n",
+    "FROM TB_CUST tc\n",
+    "INNER JOIN TB_ER_CTG tec ON tec.ER_CTG_CD = tc.CTG_CD\n",
+    "LEFT JOIN TB_ORDER to2 ON to2.CUST_ID = tc.CUST_ID AND wtid != 'OPTIONAL'\n",
+    "WHERE DELIV_POSITION IS NOT NULL\n",
+    "AND DELIV_POSITION != ''\n",
+    "AND test_yn = 'N'\n",
+    "GROUP BY tc.CUST_ID\n",
+    "\"\"\"\n",
+    "\n",
+    "with msdb_.cursor() as cursor :\n",
+    "    cursor.execute(my_sql)\n",
+    "    result = cursor.fetchall()\n",
+    "    msdb_.commit()\n",
+    "    cursor.close()\n",
+    "msdb_.close()\n",
+    "\n",
+    "    \n",
+    "\n",
+    "\n",
+    "outlist = []\n",
+    "for utf_ in result :\n",
+    "    col1 = utf_[0].decode('UTF-8')\n",
+    "    col2 = utf_[1].decode('UTF-8')\n",
+    "    col3 = utf_[2].decode('UTF-8')\n",
+    "    col4 = utf_[3].decode('UTF-8')\n",
+    "    col5 = utf_[4].decode('UTF-8')\n",
+    "    col6 = utf_[5]\n",
+    "    \n",
+    "   \n",
+    "\n",
+    "\n",
+    "    outlist.append([col1, col2, col3, col4, col5, col6])\n",
+    "\n",
+    "\n",
+    "df_cust_info = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '지역구', '업종', '가입일', '첫발주일'])\n"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## toi"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 데이터베이스 연결\n",
+    "msdb_ = pymysql.connect(\n",
+    "    user='orderherodl', # 추후 읽기 전용으로 수정 필요 \n",
+    "    passwd='OhejGL@JFH2023',\n",
+    "    host='orderherodl.cafe24.com',\n",
+    "    db='orderherodl',\n",
+    "    charset='utf8',\n",
+    "#     use_unicode=True\n",
+    ")\n",
+    "\n",
+    "\n",
+    "my_sql = f\"\"\"\n",
+    "SELECT order_no \n",
+    ", PROD_CD \n",
+    ", order_pay\n",
+    ", prod_order_cnt\n",
+    ", coupon_price\n",
+    "FROM TB_ORDER_ITEM\n",
+    "WHERE ARRIVE_DATE >= '2022-11-01' \n",
+    "\"\"\"\n",
+    "\n",
+    "with msdb_.cursor() as cursor :\n",
+    "    cursor.execute(my_sql)\n",
+    "    result = cursor.fetchall()\n",
+    "    msdb_.commit()\n",
+    "    cursor.close()\n",
+    "msdb_.close()\n",
+    "\n",
+    "    \n",
+    "\n",
+    "\n",
+    "outlist = []\n",
+    "for utf_ in result :\n",
+    "    col1 = utf_[0]\n",
+    "    col2 = utf_[1].decode('UTF-8')\n",
+    "    col3 = utf_[2]\n",
+    "    col4 = utf_[3]\n",
+    "    col5 = utf_[4]\n",
+    "   \n",
+    "\n",
+    "\n",
+    "    outlist.append([col1, col2, col3, col4, col5])\n",
+    "\n",
+    "\n",
+    "df_toi_raw = pd.DataFrame(outlist, columns = ['ORDER_NO', 'PROD_CD', 'order_pay', 'prod_order_cnt', 'coupon_price'])\n"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 주문일, 주문번호"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# 데이터베이스 연결\n",
+    "msdb_ = pymysql.connect(\n",
+    "    user='orderherodl', # 추후 읽기 전용으로 수정 필요 \n",
+    "    passwd='OhejGL@JFH2023',\n",
+    "    host='orderherodl.cafe24.com',\n",
+    "    db='orderherodl',\n",
+    "    charset='utf8',\n",
+    "#     use_unicode=True\n",
+    ")\n",
+    "\n",
+    "\n",
+    "my_sql = f\"\"\"\n",
+    "SELECT tc.CUST_ID\n",
+    ", tc.BUSINESS_NAME\n",
+    ", DATE_FORMAT(tc.REG_DATE, '%Y-%m-%d')\n",
+    ", tc.AREA_GU\n",
+    ", tec.ER_CTG_NAME \n",
+    ", to2.REG_DATE\n",
+    ", to2.ORDER_NO\n",
+    "FROM (SELECT * FROM TB_ORDER\n",
+    "\t  WHERE REG_DATE >= '2022-11-01'\n",
+    "      AND wtid != 'OPTIONAL') to2 \n",
+    "INNER JOIN (SELECT * FROM TB_CUST\n",
+    "\t\t\tWHERE test_yn = 'N'\n",
+    "\t\t\tAND DELIV_POSITION IS NOT NULL\n",
+    "\t\t\tAND DELIV_POSITION != '') tc ON tc.CUST_ID = to2.CUST_ID\n",
+    "LEFT JOIN TB_ER_CTG tec ON tec.ER_CTG_CD = tc.CTG_CD\n",
+    "\"\"\"\n",
+    "\n",
+    "with msdb_.cursor() as cursor :\n",
+    "    cursor.execute(my_sql)\n",
+    "    result = cursor.fetchall()\n",
+    "    msdb_.commit()\n",
+    "    cursor.close()\n",
+    "msdb_.close()\n",
+    "\n",
+    "    \n",
+    "\n",
+    "\n",
+    "outlist = []\n",
+    "for utf_ in result :\n",
+    "    col1 = utf_[0].decode('UTF-8')\n",
+    "    col2 = utf_[1].decode('UTF-8')\n",
+    "    col3 = utf_[2].decode('UTF-8')\n",
+    "    col4 = utf_[3].decode('UTF-8')\n",
+    "    col5 = utf_[4].decode('UTF-8')\n",
+    "    col6 = utf_[5]\n",
+    "    col7 = utf_[6]\n",
+    "   \n",
+    "\n",
+    "\n",
+    "    outlist.append([col1, col2, col3, col4, col5, col6, col7])\n",
+    "\n",
+    "\n",
+    "df_cust_order = pd.DataFrame(outlist, columns = ['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', 'ORDER_NO'])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>ORDER_NO</th>\n",
+       "      <th>PROD_CD</th>\n",
+       "      <th>order_pay</th>\n",
+       "      <th>prod_order_cnt</th>\n",
+       "      <th>coupon_price</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-01</td>\n",
+       "      <td>307095</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>10850.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>3000.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-04</td>\n",
+       "      <td>312237</td>\n",
+       "      <td>L0410060</td>\n",
+       "      <td>10200.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>P0510362</td>\n",
+       "      <td>8536.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>9380.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-09</td>\n",
+       "      <td>317128</td>\n",
+       "      <td>P0191121</td>\n",
+       "      <td>5380.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547289</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>F0210145</td>\n",
+       "      <td>62000.0</td>\n",
+       "      <td>1.9</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547290</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>P0210463</td>\n",
+       "      <td>20920.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547291</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447909</td>\n",
+       "      <td>P9991165</td>\n",
+       "      <td>2280.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547292</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447988</td>\n",
+       "      <td>A9910008</td>\n",
+       "      <td>5430.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547293</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>448009</td>\n",
+       "      <td>A0110644</td>\n",
+       "      <td>70000.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>536831 rows × 11 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           CUST_ID         매장명         가입일  지역구        업종         주문일  \\\n",
+       "0       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-01   \n",
+       "2       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-04   \n",
+       "3       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "4       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "5       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-09   \n",
+       "...            ...         ...         ...  ...       ...         ...   \n",
+       "547289  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547290  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547291  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547292  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547293  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "\n",
+       "        ORDER_NO   PROD_CD  order_pay  prod_order_cnt  coupon_price  \n",
+       "0         307095  A0210837    10850.0             3.0        3000.0  \n",
+       "2         312237  L0410060    10200.0             3.0           0.0  \n",
+       "3         314288  P0510362     8536.0             3.0           0.0  \n",
+       "4         314288  A0210837     9380.0             3.0           0.0  \n",
+       "5         317128  P0191121     5380.0             6.0           0.0  \n",
+       "...          ...       ...        ...             ...           ...  \n",
+       "547289    447908  F0210145    62000.0             1.9           0.0  \n",
+       "547290    447908  P0210463    20920.0             1.0           0.0  \n",
+       "547291    447909  P9991165     2280.0             5.0           0.0  \n",
+       "547292    447988  A9910008     5430.0             2.0           0.0  \n",
+       "547293    448009  A0110644    70000.0             2.0           0.0  \n",
+       "\n",
+       "[536831 rows x 11 columns]"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_order_prod = pd.merge(df_cust_order, df_toi_raw, how='left', on='ORDER_NO')\n",
+    "df_order_cancel = df_cust_order_prod[df_cust_order_prod['PROD_CD'].isna()]\n",
+    "df_cust_order_complete = df_cust_order_prod[~ df_cust_order_prod['PROD_CD'].isna()]\n",
+    "df_cust_order_complete"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>ORDER_NO</th>\n",
+       "      <th>PROD_CD</th>\n",
+       "      <th>order_pay</th>\n",
+       "      <th>prod_order_cnt</th>\n",
+       "      <th>coupon_price</th>\n",
+       "      <th>매출</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-01</td>\n",
+       "      <td>307095</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>10850.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>3000.0</td>\n",
+       "      <td>29550.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-04</td>\n",
+       "      <td>312237</td>\n",
+       "      <td>L0410060</td>\n",
+       "      <td>10200.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>30600.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>P0510362</td>\n",
+       "      <td>8536.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>25608.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>9380.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>28140.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-09</td>\n",
+       "      <td>317128</td>\n",
+       "      <td>P0191121</td>\n",
+       "      <td>5380.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>32280.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547289</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>F0210145</td>\n",
+       "      <td>62000.0</td>\n",
+       "      <td>1.9</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>117800.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547290</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>P0210463</td>\n",
+       "      <td>20920.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>20920.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547291</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447909</td>\n",
+       "      <td>P9991165</td>\n",
+       "      <td>2280.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>11400.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547292</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447988</td>\n",
+       "      <td>A9910008</td>\n",
+       "      <td>5430.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>10860.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547293</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>448009</td>\n",
+       "      <td>A0110644</td>\n",
+       "      <td>70000.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>140000.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>536831 rows × 12 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           CUST_ID         매장명         가입일  지역구        업종         주문일  \\\n",
+       "0       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-01   \n",
+       "2       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-04   \n",
+       "3       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "4       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "5       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-09   \n",
+       "...            ...         ...         ...  ...       ...         ...   \n",
+       "547289  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547290  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547291  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547292  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547293  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "\n",
+       "        ORDER_NO   PROD_CD  order_pay  prod_order_cnt  coupon_price        매출  \n",
+       "0         307095  A0210837    10850.0             3.0        3000.0   29550.0  \n",
+       "2         312237  L0410060    10200.0             3.0           0.0   30600.0  \n",
+       "3         314288  P0510362     8536.0             3.0           0.0   25608.0  \n",
+       "4         314288  A0210837     9380.0             3.0           0.0   28140.0  \n",
+       "5         317128  P0191121     5380.0             6.0           0.0   32280.0  \n",
+       "...          ...       ...        ...             ...           ...       ...  \n",
+       "547289    447908  F0210145    62000.0             1.9           0.0  117800.0  \n",
+       "547290    447908  P0210463    20920.0             1.0           0.0   20920.0  \n",
+       "547291    447909  P9991165     2280.0             5.0           0.0   11400.0  \n",
+       "547292    447988  A9910008     5430.0             2.0           0.0   10860.0  \n",
+       "547293    448009  A0110644    70000.0             2.0           0.0  140000.0  \n",
+       "\n",
+       "[536831 rows x 12 columns]"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_order_complete['매출'] = df_cust_order_complete['order_pay'] * df_cust_order_complete['prod_order_cnt'] - df_cust_order_complete['coupon_price']\n",
+    "df_cust_order_complete"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 업장의 주문일별 매출"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 112442 entries, 0 to 112441\n",
+      "Data columns (total 7 columns):\n",
+      " #   Column   Non-Null Count   Dtype  \n",
+      "---  ------   --------------   -----  \n",
+      " 0   CUST_ID  112442 non-null  object \n",
+      " 1   매장명      112442 non-null  object \n",
+      " 2   가입일      112442 non-null  object \n",
+      " 3   지역구      112442 non-null  object \n",
+      " 4   업종       112442 non-null  object \n",
+      " 5   주문일      112442 non-null  object \n",
+      " 6   매출       112442 non-null  float64\n",
+      "dtypes: float64(1), object(6)\n",
+      "memory usage: 6.0+ MB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df_cust_orderday = df_cust_order_complete[['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일', '매출']].groupby(['CUST_ID', '매장명', '가입일', '지역구', '업종', '주문일'], as_index=0).sum()\n",
+    "df_cust_orderday.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>매출</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-01</td>\n",
+       "      <td>29550.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-04</td>\n",
+       "      <td>30600.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>53748.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-09</td>\n",
+       "      <td>53400.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-22</td>\n",
+       "      <td>179256.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>112437</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-08</td>\n",
+       "      <td>413760.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>112438</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-09</td>\n",
+       "      <td>352370.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>112439</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-10</td>\n",
+       "      <td>2138420.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>112440</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-12</td>\n",
+       "      <td>602390.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>112441</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>723180.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>112442 rows × 7 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           CUST_ID         매장명         가입일  지역구        업종        주문일  \\\n",
+       "0       1010629807    채선당성동구청점  2021-04-20  성동구        한식 2022-11-01   \n",
+       "1       1010629807    채선당성동구청점  2021-04-20  성동구        한식 2022-11-04   \n",
+       "2       1010629807    채선당성동구청점  2021-04-20  성동구        한식 2022-11-07   \n",
+       "3       1010629807    채선당성동구청점  2021-04-20  성동구        한식 2022-11-09   \n",
+       "4       1010629807    채선당성동구청점  2021-04-20  성동구        한식 2022-11-22   \n",
+       "...            ...         ...         ...  ...       ...        ...   \n",
+       "112437  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치 2023-02-08   \n",
+       "112438  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치 2023-02-09   \n",
+       "112439  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치 2023-02-10   \n",
+       "112440  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치 2023-02-12   \n",
+       "112441  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치 2023-02-13   \n",
+       "\n",
+       "               매출  \n",
+       "0         29550.0  \n",
+       "1         30600.0  \n",
+       "2         53748.0  \n",
+       "3         53400.0  \n",
+       "4        179256.0  \n",
+       "...           ...  \n",
+       "112437   413760.0  \n",
+       "112438   352370.0  \n",
+       "112439  2138420.0  \n",
+       "112440   602390.0  \n",
+       "112441   723180.0  \n",
+       "\n",
+       "[112442 rows x 7 columns]"
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_orderday['주문일'] = pd.to_datetime(df_cust_orderday['주문일'])\n",
+    "df_cust_orderday"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_pg_sales_history['sales_date_ymd'] = df_pg_sales_history['sales_date'].dt.strftime('%Y-%m-%d')\n",
+    "df_pg_sales_history['sales_date'] = pd.to_datetime(df_pg_sales_history['sales_date'])\n",
+    "df_pg_sales_history['sales_date_ymd'] = pd.to_datetime(df_pg_sales_history['sales_date_ymd'])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>2108701169</td>\n",
+       "      <td>2023-01-12</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>0105639738</td>\n",
+       "      <td>2023-01-17</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1585900160</td>\n",
+       "      <td>2023-01-17</td>\n",
+       "      <td>오더 체크</td>\n",
+       "      <td>단순방문</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>6</td>\n",
+       "      <td>8890302509</td>\n",
+       "      <td>2023-01-17</td>\n",
+       "      <td>고객 케어</td>\n",
+       "      <td>단순방문</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>7</td>\n",
+       "      <td>2023165563</td>\n",
+       "      <td>2023-01-17</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID sales_date_ymd activity_option sales_activities\n",
+       "0         1  2108701169     2023-01-12           품목 확장             품목수취\n",
+       "1         2  0105639738     2023-01-17           품목 확장             품목수취\n",
+       "2         3  1585900160     2023-01-17           오더 체크             단순방문\n",
+       "3         6  8890302509     2023-01-17           고객 케어             단순방문\n",
+       "4         7  2023165563     2023-01-17           품목 확장             품목수취"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_pg_sales_3col = df_pg_sales_history[['sales_no', 'cust_id', 'sales_date_ymd', 'activity_option', 'sales_activities']]\n",
+    "df_pg_sales_3col.columns = ['sales_no','CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']\n",
+    "df_pg_sales_3col.head()"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 새롭게 추가된 영업활동 row 추출"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID sales_date_ymd activity_option sales_activities\n",
+       "0       381  2062599079     2023-03-22            첫 발주             품목수취\n",
+       "1       382  2062599079     2023-03-24           품목 확장             품목수취"
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_pg_recent = df_pg_sales_3col[df_pg_sales_3col['sales_no'] > max_sales_no]\n",
+    "df_pg_recent.reset_index(inplace=True, drop=True)\n",
+    "df_pg_recent"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 주차별 매출 구하기"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def ragne_sales(df):\n",
+    "    sales_no_list = []\n",
+    "    cust_id_list = []\n",
+    "    sales_param_list = []\n",
+    "    activities_list = []\n",
+    "    activ_day_list = []\n",
+    "\n",
+    "    p1w_sales_list = []\n",
+    "    p2w_sales_list = []\n",
+    "    p3w_sales_list = []\n",
+    "    p4w_sales_list = []\n",
+    "    p5w_sales_list = []\n",
+    "    p6w_sales_list = []\n",
+    "    p7w_sales_list = []\n",
+    "    p8w_sales_list = []\n",
+    "\n",
+    "    m1w_sales_list = []\n",
+    "    m2w_sales_list = []\n",
+    "    m3w_sales_list = []\n",
+    "    m4w_sales_list = []\n",
+    "    m5w_sales_list = []\n",
+    "    m6w_sales_list = []\n",
+    "    m7w_sales_list = []\n",
+    "    m8w_sales_list = []\n",
+    "\n",
+    "    for i in range(len(df)):\n",
+    "\n",
+    "        ## 세일링 이후\n",
+    "\n",
+    "        start_p1w = df.loc[i,'sales_date_ymd'] \n",
+    "        end_p1w = df.loc[i,'sales_date_ymd'] + timedelta(days=6)\n",
+    "        temp_df_p1w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p1w) & (df_cust_orderday['주문일'] <= end_p1w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p1w_sales = temp_df_p1w['매출'].sum()\n",
+    "\n",
+    "        start_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=7)\n",
+    "        end_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=13)\n",
+    "        temp_df_p2w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p2w) & (df_cust_orderday['주문일'] <= end_p2w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p2w_sales = temp_df_p2w['매출'].sum()\n",
+    "\n",
+    "        start_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=14)\n",
+    "        end_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=20)\n",
+    "        temp_df_p3w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p3w) & (df_cust_orderday['주문일'] <= end_p3w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p3w_sales = temp_df_p3w['매출'].sum()\n",
+    "\n",
+    "        start_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=21)\n",
+    "        end_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=27)\n",
+    "        temp_df_p4w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p4w) & (df_cust_orderday['주문일'] <= end_p4w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p4w_sales = temp_df_p4w['매출'].sum()\n",
+    "\n",
+    "        start_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=28)\n",
+    "        end_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=34)\n",
+    "        temp_df_p5w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p5w) & (df_cust_orderday['주문일'] <= end_p5w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p5w_sales = temp_df_p5w['매출'].sum()\n",
+    "\n",
+    "        start_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=35)\n",
+    "        end_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=41)\n",
+    "        temp_df_p6w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p6w) & (df_cust_orderday['주문일'] <= end_p6w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p6w_sales = temp_df_p6w['매출'].sum()\n",
+    "\n",
+    "        start_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=42)\n",
+    "        end_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=48)\n",
+    "        temp_df_p7w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p7w) & (df_cust_orderday['주문일'] <= end_p7w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p7w_sales = temp_df_p7w['매출'].sum()\n",
+    "\n",
+    "        start_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=49)\n",
+    "        end_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=55)\n",
+    "        temp_df_p8w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_p8w) & (df_cust_orderday['주문일'] <= end_p8w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p8w_sales = temp_df_p8w['매출'].sum()\n",
+    "\n",
+    "\n",
+    "        ## 세일링 이전 \n",
+    "\n",
+    "        start_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=7)\n",
+    "        end_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=1)\n",
+    "        temp_df_m1w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m1w) & (df_cust_orderday['주문일'] <= end_m1w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m1w_sales = temp_df_m1w['매출'].sum()\n",
+    "\n",
+    "        start_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=14)\n",
+    "        end_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=8)\n",
+    "        temp_df_m2w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m2w) & (df_cust_orderday['주문일'] <= end_m2w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m2w_sales = temp_df_m2w['매출'].sum()\n",
+    "\n",
+    "        start_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=21)\n",
+    "        end_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=15)\n",
+    "        temp_df_m3w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m3w) & (df_cust_orderday['주문일'] <= end_m3w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m3w_sales = temp_df_m3w['매출'].sum()\n",
+    "\n",
+    "        start_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=28)\n",
+    "        end_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=22)\n",
+    "        temp_df_m4w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m4w) & (df_cust_orderday['주문일'] <= end_m4w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m4w_sales = temp_df_m4w['매출'].sum()\n",
+    "\n",
+    "        start_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=35)\n",
+    "        end_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=29)\n",
+    "        temp_df_m5w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m5w) & (df_cust_orderday['주문일'] <= end_m5w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m5w_sales = temp_df_m5w['매출'].sum()\n",
+    "\n",
+    "        start_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=42)\n",
+    "        end_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=36)\n",
+    "        temp_df_m6w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m6w) & (df_cust_orderday['주문일'] <= end_m6w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m6w_sales = temp_df_m6w['매출'].sum()\n",
+    "\n",
+    "        start_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=49)\n",
+    "        end_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=43)\n",
+    "        temp_df_m7w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m7w) & (df_cust_orderday['주문일'] <= end_m7w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m7w_sales = temp_df_m7w['매출'].sum()\n",
+    "\n",
+    "        start_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=56)\n",
+    "        end_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=50)\n",
+    "        temp_df_m8w = df_cust_orderday[(df_cust_orderday['주문일'] >= start_m8w) & (df_cust_orderday['주문일'] <= end_m8w) & (df_cust_orderday['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m8w_sales = temp_df_m8w['매출'].sum()\n",
+    "\n",
+    "\n",
+    "        ## 값 리스트에 넣기\n",
+    "\n",
+    "        sales_no_list.append(df.loc[i, 'sales_no'])\n",
+    "        cust_id_list.append(df.loc[i,'CUST_ID'])\n",
+    "        sales_param_list.append(df.loc[i, 'activity_option'])\n",
+    "        activ_day_list.append(df.loc[i, 'sales_date_ymd'])\n",
+    "        activities_list.append(df.loc[i, 'sales_activities'])\n",
+    "\n",
+    "        p1w_sales_list.append(p1w_sales)\n",
+    "        p2w_sales_list.append(p2w_sales)\n",
+    "        p3w_sales_list.append(p3w_sales)\n",
+    "        p4w_sales_list.append(p4w_sales)\n",
+    "        p5w_sales_list.append(p5w_sales)\n",
+    "        p6w_sales_list.append(p6w_sales)\n",
+    "        p7w_sales_list.append(p7w_sales)\n",
+    "        p8w_sales_list.append(p8w_sales)\n",
+    "\n",
+    "        m1w_sales_list.append(m1w_sales)\n",
+    "        m2w_sales_list.append(m2w_sales)\n",
+    "        m3w_sales_list.append(m3w_sales)\n",
+    "        m4w_sales_list.append(m4w_sales)\n",
+    "        m5w_sales_list.append(m5w_sales)\n",
+    "        m6w_sales_list.append(m6w_sales)\n",
+    "        m7w_sales_list.append(m7w_sales)\n",
+    "        m8w_sales_list.append(m8w_sales)\n",
+    "\n",
+    "\n",
+    "    ## DF 생성\n",
+    "    df_range_sales = pd.DataFrame( {'sales_no' : sales_no_list\n",
+    "                                        , 'CUST_ID' : cust_id_list\n",
+    "                                        , 'activity_option' : sales_param_list\n",
+    "                                        , 'sales_activities' : activities_list\n",
+    "                                        , 'sales_date_ymd' : activ_day_list\n",
+    "                                        , 'm8w_sales' : m8w_sales_list\n",
+    "                                        , 'm7w_sales' : m7w_sales_list\n",
+    "                                        , 'm6w_sales' : m6w_sales_list\n",
+    "                                        , 'm5w_sales' : m5w_sales_list\n",
+    "                                        , 'm4w_sales' : m4w_sales_list\n",
+    "                                        , 'm3w_sales' : m3w_sales_list\n",
+    "                                        , 'm2w_sales' : m2w_sales_list\n",
+    "                                        , 'm1w_sales' : m1w_sales_list        \n",
+    "                                        , 'p1w_sales' : p1w_sales_list\n",
+    "                                        , 'p2w_sales' : p2w_sales_list\n",
+    "                                        , 'p3w_sales' : p3w_sales_list\n",
+    "                                        , 'p4w_sales' : p4w_sales_list\n",
+    "                                        , 'p5w_sales' : p5w_sales_list\n",
+    "                                        , 'p6w_sales' : p6w_sales_list\n",
+    "                                        , 'p7w_sales' : p7w_sales_list\n",
+    "                                        , 'p8w_sales' : p8w_sales_list\n",
+    "                                        }\n",
+    "                                    )\n",
+    "        \n",
+    "    return df_range_sales\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cust_sales_pg = ragne_sales(df_pg_recent)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID activity_option sales_activities sales_date_ymd  \\\n",
+       "0       381  2062599079            첫 발주             품목수취     2023-03-22   \n",
+       "1       382  2062599079           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m7w_sales  m6w_sales  m5w_sales  m4w_sales  m3w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   m2w_sales  m1w_sales  p1w_sales  p2w_sales  p3w_sales  p4w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   p5w_sales  p6w_sales  p7w_sales  p8w_sales  \n",
+       "0        0.0        0.0        0.0        0.0  \n",
+       "1        0.0        0.0        0.0        0.0  "
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cust_sales_pg"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# 주차별 SKU 구하기"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>ORDER_NO</th>\n",
+       "      <th>PROD_CD</th>\n",
+       "      <th>order_pay</th>\n",
+       "      <th>prod_order_cnt</th>\n",
+       "      <th>coupon_price</th>\n",
+       "      <th>매출</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-01</td>\n",
+       "      <td>307095</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>10850.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>3000.0</td>\n",
+       "      <td>29550.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-04</td>\n",
+       "      <td>312237</td>\n",
+       "      <td>L0410060</td>\n",
+       "      <td>10200.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>30600.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>P0510362</td>\n",
+       "      <td>8536.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>25608.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-07</td>\n",
+       "      <td>314288</td>\n",
+       "      <td>A0210837</td>\n",
+       "      <td>9380.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>28140.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>1010629807</td>\n",
+       "      <td>채선당성동구청점</td>\n",
+       "      <td>2021-04-20</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>한식</td>\n",
+       "      <td>2022-11-09</td>\n",
+       "      <td>317128</td>\n",
+       "      <td>P0191121</td>\n",
+       "      <td>5380.0</td>\n",
+       "      <td>6.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>32280.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>...</th>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "      <td>...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547289</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>F0210145</td>\n",
+       "      <td>62000.0</td>\n",
+       "      <td>1.9</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>117800.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547290</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447908</td>\n",
+       "      <td>P0210463</td>\n",
+       "      <td>20920.0</td>\n",
+       "      <td>1.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>20920.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547291</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447909</td>\n",
+       "      <td>P9991165</td>\n",
+       "      <td>2280.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>11400.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547292</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>447988</td>\n",
+       "      <td>A9910008</td>\n",
+       "      <td>5430.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>10860.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>547293</th>\n",
+       "      <td>levegiwang</td>\n",
+       "      <td>르베지왕잠실(임시)</td>\n",
+       "      <td>2022-10-25</td>\n",
+       "      <td>송파구</td>\n",
+       "      <td>샐러드/샌드위치</td>\n",
+       "      <td>2023-02-13</td>\n",
+       "      <td>448009</td>\n",
+       "      <td>A0110644</td>\n",
+       "      <td>70000.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>140000.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>536831 rows × 12 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "           CUST_ID         매장명         가입일  지역구        업종         주문일  \\\n",
+       "0       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-01   \n",
+       "2       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-04   \n",
+       "3       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "4       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-07   \n",
+       "5       1010629807    채선당성동구청점  2021-04-20  성동구        한식  2022-11-09   \n",
+       "...            ...         ...         ...  ...       ...         ...   \n",
+       "547289  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547290  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547291  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547292  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "547293  levegiwang  르베지왕잠실(임시)  2022-10-25  송파구  샐러드/샌드위치  2023-02-13   \n",
+       "\n",
+       "        ORDER_NO   PROD_CD  order_pay  prod_order_cnt  coupon_price        매출  \n",
+       "0         307095  A0210837    10850.0             3.0        3000.0   29550.0  \n",
+       "2         312237  L0410060    10200.0             3.0           0.0   30600.0  \n",
+       "3         314288  P0510362     8536.0             3.0           0.0   25608.0  \n",
+       "4         314288  A0210837     9380.0             3.0           0.0   28140.0  \n",
+       "5         317128  P0191121     5380.0             6.0           0.0   32280.0  \n",
+       "...          ...       ...        ...             ...           ...       ...  \n",
+       "547289    447908  F0210145    62000.0             1.9           0.0  117800.0  \n",
+       "547290    447908  P0210463    20920.0             1.0           0.0   20920.0  \n",
+       "547291    447909  P9991165     2280.0             5.0           0.0   11400.0  \n",
+       "547292    447988  A9910008     5430.0             2.0           0.0   10860.0  \n",
+       "547293    448009  A0110644    70000.0             2.0           0.0  140000.0  \n",
+       "\n",
+       "[536831 rows x 12 columns]"
+      ]
+     },
+     "execution_count": 20,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_order_complete"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "pg_cid_list = cust_sales_pg['CUST_ID'].unique().tolist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID activity_option sales_activities sales_date_ymd  \\\n",
+       "0       381  2062599079            첫 발주             품목수취     2023-03-22   \n",
+       "1       382  2062599079           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m7w_sales  m6w_sales  m5w_sales  m4w_sales  m3w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   m2w_sales  m1w_sales  p1w_sales  p2w_sales  p3w_sales  p4w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   p5w_sales  p6w_sales  p7w_sales  p8w_sales  \n",
+       "0        0.0        0.0        0.0        0.0  \n",
+       "1        0.0        0.0        0.0        0.0  "
+      ]
+     },
+     "execution_count": 22,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cust_sales_pg"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID sales_date_ymd activity_option sales_activities\n",
+       "0       381  2062599079     2023-03-22            첫 발주             품목수취\n",
+       "1       382  2062599079     2023-03-24           품목 확장             품목수취"
+      ]
+     },
+     "execution_count": 23,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_pg_sales_3col = cust_sales_pg[['sales_no', 'CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']]\n",
+    "df_pg_sales_3col.columns = ['sales_no','CUST_ID', 'sales_date_ymd', 'activity_option', 'sales_activities']\n",
+    "df_pg_sales_3col.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_cust_order_complete_filter =  df_cust_order_complete[df_cust_order_complete['CUST_ID'].isin(pg_cid_list)]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>ORDER_NO</th>\n",
+       "      <th>PROD_CD</th>\n",
+       "      <th>order_pay</th>\n",
+       "      <th>prod_order_cnt</th>\n",
+       "      <th>coupon_price</th>\n",
+       "      <th>매출</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Empty DataFrame\n",
+       "Columns: [CUST_ID, 매장명, 가입일, 지역구, 업종, 주문일, ORDER_NO, PROD_CD, order_pay, prod_order_cnt, coupon_price, 매출]\n",
+       "Index: []"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_order_complete_filter"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "df_cust_sku = df_cust_order_complete_filter[['CUST_ID', '주문일', 'PROD_CD']]\n",
+    "df_cust_sku.reset_index(inplace=True, drop=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>주문일</th>\n",
+       "      <th>PROD_CD</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Empty DataFrame\n",
+       "Columns: [CUST_ID, 주문일, PROD_CD]\n",
+       "Index: []"
+      ]
+     },
+     "execution_count": 27,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_cust_sku"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def ragne_sku(df):\n",
+    "    cust_id_list = []\n",
+    "    sales_no_list = []\n",
+    "    sku_param_list = []\n",
+    "    activities_list = []\n",
+    "    activ_day_list = []\n",
+    "\n",
+    "    p1w_sku_list = []\n",
+    "    p2w_sku_list = []\n",
+    "    p3w_sku_list = []\n",
+    "    p4w_sku_list = []\n",
+    "    p5w_sku_list = []\n",
+    "    p6w_sku_list = []\n",
+    "    p7w_sku_list = []\n",
+    "    p8w_sku_list = []\n",
+    "\n",
+    "    m1w_sku_list = []\n",
+    "    m2w_sku_list = []\n",
+    "    m3w_sku_list = []\n",
+    "    m4w_sku_list = []\n",
+    "    m5w_sku_list = []\n",
+    "    m6w_sku_list = []\n",
+    "    m7w_sku_list = []\n",
+    "    m8w_sku_list = []\n",
+    "\n",
+    "    for i in range(len(df)):\n",
+    "\n",
+    "        ## 세일링 이후\n",
+    "\n",
+    "        start_p1w = df.loc[i,'sales_date_ymd'] \n",
+    "        end_p1w = df.loc[i,'sales_date_ymd'] + timedelta(days=6)\n",
+    "        temp_df_p1w = df_cust_sku[(df_cust_sku['주문일'] >= start_p1w) & (df_cust_sku['주문일'] <= end_p1w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p1w_sku = temp_df_p1w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=7)\n",
+    "        end_p2w = df.loc[i,'sales_date_ymd'] + timedelta(days=13)\n",
+    "        temp_df_p2w = df_cust_sku[(df_cust_sku['주문일'] >= start_p2w) & (df_cust_sku['주문일'] <= end_p2w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p2w_sku = temp_df_p2w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=14)\n",
+    "        end_p3w = df.loc[i,'sales_date_ymd'] + timedelta(days=20)\n",
+    "        temp_df_p3w = df_cust_sku[(df_cust_sku['주문일'] >= start_p3w) & (df_cust_sku['주문일'] <= end_p3w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p3w_sku = temp_df_p3w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=21)\n",
+    "        end_p4w = df.loc[i,'sales_date_ymd'] + timedelta(days=27)\n",
+    "        temp_df_p4w = df_cust_sku[(df_cust_sku['주문일'] >= start_p4w) & (df_cust_sku['주문일'] <= end_p4w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p4w_sku = temp_df_p4w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=28)\n",
+    "        end_p5w = df.loc[i,'sales_date_ymd'] + timedelta(days=34)\n",
+    "        temp_df_p5w = df_cust_sku[(df_cust_sku['주문일'] >= start_p5w) & (df_cust_sku['주문일'] <= end_p5w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p5w_sku = temp_df_p5w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=35)\n",
+    "        end_p6w = df.loc[i,'sales_date_ymd'] + timedelta(days=41)\n",
+    "        temp_df_p6w = df_cust_sku[(df_cust_sku['주문일'] >= start_p6w) & (df_cust_sku['주문일'] <= end_p6w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p6w_sku = temp_df_p6w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=42)\n",
+    "        end_p7w = df.loc[i,'sales_date_ymd'] + timedelta(days=48)\n",
+    "        temp_df_p7w = df_cust_sku[(df_cust_sku['주문일'] >= start_p7w) & (df_cust_sku['주문일'] <= end_p7w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p7w_sku = temp_df_p7w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=49)\n",
+    "        end_p8w = df.loc[i,'sales_date_ymd'] + timedelta(days=55)\n",
+    "        temp_df_p8w = df_cust_sku[(df_cust_sku['주문일'] >= start_p8w) & (df_cust_sku['주문일'] <= end_p8w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        p8w_sku = temp_df_p8w['PROD_CD'].nunique()\n",
+    "\n",
+    "\n",
+    "        ## 세일링 이전 \n",
+    "\n",
+    "        start_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=7)\n",
+    "        end_m1w = df.loc[i,'sales_date_ymd'] - timedelta(days=1)\n",
+    "        temp_df_m1w = df_cust_sku[(df_cust_sku['주문일'] >= start_m1w) & (df_cust_sku['주문일'] <= end_m1w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m1w_sku = temp_df_m1w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=14)\n",
+    "        end_m2w = df.loc[i,'sales_date_ymd'] - timedelta(days=8)\n",
+    "        temp_df_m2w = df_cust_sku[(df_cust_sku['주문일'] >= start_m2w) & (df_cust_sku['주문일'] <= end_m2w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m2w_sku = temp_df_m2w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=21)\n",
+    "        end_m3w = df.loc[i,'sales_date_ymd'] - timedelta(days=15)\n",
+    "        temp_df_m3w = df_cust_sku[(df_cust_sku['주문일'] >= start_m3w) & (df_cust_sku['주문일'] <= end_m3w) & (df_cust_sku['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m3w_sku = temp_df_m3w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=28)\n",
+    "        end_m4w = df.loc[i,'sales_date_ymd'] - timedelta(days=22)\n",
+    "        temp_df_m4w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m4w) & (df_cust_order_complete['주문일'] <= end_m4w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m4w_sku = temp_df_m4w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=35)\n",
+    "        end_m5w = df.loc[i,'sales_date_ymd'] - timedelta(days=29)\n",
+    "        temp_df_m5w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m5w) & (df_cust_order_complete['주문일'] <= end_m5w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m5w_sku = temp_df_m5w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=42)\n",
+    "        end_m6w = df.loc[i,'sales_date_ymd'] - timedelta(days=36)\n",
+    "        temp_df_m6w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m6w) & (df_cust_order_complete['주문일'] <= end_m6w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m6w_sku = temp_df_m6w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=49)\n",
+    "        end_m7w = df.loc[i,'sales_date_ymd'] - timedelta(days=43)\n",
+    "        temp_df_m7w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m7w) & (df_cust_order_complete['주문일'] <= end_m7w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m7w_sku = temp_df_m7w['PROD_CD'].nunique()\n",
+    "\n",
+    "        start_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=56)\n",
+    "        end_m8w = df.loc[i,'sales_date_ymd'] - timedelta(days=50)\n",
+    "        temp_df_m8w = df_cust_order_complete[(df_cust_order_complete['주문일'] >= start_m8w) & (df_cust_order_complete['주문일'] <= end_m8w) & (df_cust_order_complete['CUST_ID']== df.loc[i,'CUST_ID'])]\n",
+    "        m8w_sku = temp_df_m8w['PROD_CD'].nunique()\n",
+    "\n",
+    "\n",
+    "        ## 값 리스트에 넣기\n",
+    "\n",
+    "        cust_id_list.append(df.loc[i,'CUST_ID'])\n",
+    "        sales_no_list.append(df.loc[i, 'sales_no'])\n",
+    "        sku_param_list.append(df.loc[i, 'activity_option'])\n",
+    "        activities_list.append(df.loc[i, 'sales_activities'])\n",
+    "        activ_day_list.append(df.loc[i, 'sales_date_ymd'])\n",
+    "\n",
+    "        p1w_sku_list.append(p1w_sku)\n",
+    "        p2w_sku_list.append(p2w_sku)\n",
+    "        p3w_sku_list.append(p3w_sku)\n",
+    "        p4w_sku_list.append(p4w_sku)\n",
+    "        p5w_sku_list.append(p5w_sku)\n",
+    "        p6w_sku_list.append(p6w_sku)\n",
+    "        p7w_sku_list.append(p7w_sku)\n",
+    "        p8w_sku_list.append(p8w_sku)\n",
+    "\n",
+    "        m1w_sku_list.append(m1w_sku)\n",
+    "        m2w_sku_list.append(m2w_sku)\n",
+    "        m3w_sku_list.append(m3w_sku)\n",
+    "        m4w_sku_list.append(m4w_sku)\n",
+    "        m5w_sku_list.append(m5w_sku)\n",
+    "        m6w_sku_list.append(m6w_sku)\n",
+    "        m7w_sku_list.append(m7w_sku)\n",
+    "        m8w_sku_list.append(m8w_sku)\n",
+    "\n",
+    "\n",
+    "    ## DF 생성\n",
+    "    df_range_sku = pd.DataFrame( {'sales_no' : sales_no_list\n",
+    "                                        , 'CUST_ID' : cust_id_list\n",
+    "                                        , 'activity_option' : sku_param_list\n",
+    "                                        , 'sales_activities' : activities_list\n",
+    "                                        , 'sales_date_ymd' : activ_day_list\n",
+    "                                        , 'm8w_sku' : m8w_sku_list\n",
+    "                                        , 'm7w_sku' : m7w_sku_list\n",
+    "                                        , 'm6w_sku' : m6w_sku_list\n",
+    "                                        , 'm5w_sku' : m5w_sku_list\n",
+    "                                        , 'm4w_sku' : m4w_sku_list\n",
+    "                                        , 'm3w_sku' : m3w_sku_list\n",
+    "                                        , 'm2w_sku' : m2w_sku_list\n",
+    "                                        , 'm1w_sku' : m1w_sku_list        \n",
+    "                                        , 'p1w_sku' : p1w_sku_list\n",
+    "                                        , 'p2w_sku' : p2w_sku_list\n",
+    "                                        , 'p3w_sku' : p3w_sku_list\n",
+    "                                        , 'p4w_sku' : p4w_sku_list\n",
+    "                                        , 'p5w_sku' : p5w_sku_list\n",
+    "                                        , 'p6w_sku' : p6w_sku_list\n",
+    "                                        , 'p7w_sku' : p7w_sku_list\n",
+    "                                        , 'p8w_sku' : p8w_sku_list\n",
+    "                                        }\n",
+    "                                    )\n",
+    "        \n",
+    "    return df_range_sku\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cust_sku_pg = ragne_sku(df_pg_sales_3col)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "cust_sales_sku_pg = pd.merge(cust_sales_pg, cust_sku_pg, how='left', on=['sales_no', 'CUST_ID', 'activity_option', 'sales_activities', 'sales_date_ymd'])\n",
+    "cust_sales_sku_pg_admin = pd.merge(cust_sales_sku_pg, df_pg_sales_history[['sales_no', 'insert_id']], how='left', on= 'sales_no')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "      <th>m8w_sku</th>\n",
+       "      <th>m7w_sku</th>\n",
+       "      <th>m6w_sku</th>\n",
+       "      <th>m5w_sku</th>\n",
+       "      <th>m4w_sku</th>\n",
+       "      <th>m3w_sku</th>\n",
+       "      <th>m2w_sku</th>\n",
+       "      <th>m1w_sku</th>\n",
+       "      <th>p1w_sku</th>\n",
+       "      <th>p2w_sku</th>\n",
+       "      <th>p3w_sku</th>\n",
+       "      <th>p4w_sku</th>\n",
+       "      <th>p5w_sku</th>\n",
+       "      <th>p6w_sku</th>\n",
+       "      <th>p7w_sku</th>\n",
+       "      <th>p8w_sku</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID activity_option sales_activities sales_date_ymd  \\\n",
+       "0       381  2062599079            첫 발주             품목수취     2023-03-22   \n",
+       "1       382  2062599079           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m7w_sales  m6w_sales  m5w_sales  m4w_sales  m3w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   m2w_sales  m1w_sales  p1w_sales  p2w_sales  p3w_sales  p4w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   p5w_sales  p6w_sales  p7w_sales  p8w_sales  m8w_sku  m7w_sku  m6w_sku  \\\n",
+       "0        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "1        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "\n",
+       "   m5w_sku  m4w_sku  m3w_sku  m2w_sku  m1w_sku  p1w_sku  p2w_sku  p3w_sku  \\\n",
+       "0        0        0        0        0        0        0        0        0   \n",
+       "1        0        0        0        0        0        0        0        0   \n",
+       "\n",
+       "   p4w_sku  p5w_sku  p6w_sku  p7w_sku  p8w_sku  \n",
+       "0        0        0        0        0        0  \n",
+       "1        0        0        0        0        0  "
+      ]
+     },
+     "execution_count": 31,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cust_sales_sku_pg"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "      <th>m8w_sku</th>\n",
+       "      <th>m7w_sku</th>\n",
+       "      <th>m6w_sku</th>\n",
+       "      <th>m5w_sku</th>\n",
+       "      <th>m4w_sku</th>\n",
+       "      <th>m3w_sku</th>\n",
+       "      <th>m2w_sku</th>\n",
+       "      <th>m1w_sku</th>\n",
+       "      <th>p1w_sku</th>\n",
+       "      <th>p2w_sku</th>\n",
+       "      <th>p3w_sku</th>\n",
+       "      <th>p4w_sku</th>\n",
+       "      <th>p5w_sku</th>\n",
+       "      <th>p6w_sku</th>\n",
+       "      <th>p7w_sku</th>\n",
+       "      <th>p8w_sku</th>\n",
+       "      <th>insert_id</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>owne</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>owne</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID activity_option sales_activities sales_date_ymd  \\\n",
+       "0       381  2062599079            첫 발주             품목수취     2023-03-22   \n",
+       "1       382  2062599079           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m7w_sales  m6w_sales  m5w_sales  m4w_sales  m3w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   m2w_sales  m1w_sales  p1w_sales  p2w_sales  p3w_sales  p4w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   p5w_sales  p6w_sales  p7w_sales  p8w_sales  m8w_sku  m7w_sku  m6w_sku  \\\n",
+       "0        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "1        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "\n",
+       "   m5w_sku  m4w_sku  m3w_sku  m2w_sku  m1w_sku  p1w_sku  p2w_sku  p3w_sku  \\\n",
+       "0        0        0        0        0        0        0        0        0   \n",
+       "1        0        0        0        0        0        0        0        0   \n",
+       "\n",
+       "   p4w_sku  p5w_sku  p6w_sku  p7w_sku  p8w_sku insert_id  \n",
+       "0        0        0        0        0        0      owne  \n",
+       "1        0        0        0        0        0      owne  "
+      ]
+     },
+     "execution_count": 32,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "cust_sales_sku_pg_admin"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "update_table = pd.merge(cust_sales_sku_pg_admin, df_cust_info, how='left', on='CUST_ID')\n",
+    "update_table_fn = update_table[~update_table['매장명'].isna()]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "      <th>m8w_sku</th>\n",
+       "      <th>m7w_sku</th>\n",
+       "      <th>m6w_sku</th>\n",
+       "      <th>m5w_sku</th>\n",
+       "      <th>m4w_sku</th>\n",
+       "      <th>m3w_sku</th>\n",
+       "      <th>m2w_sku</th>\n",
+       "      <th>m1w_sku</th>\n",
+       "      <th>p1w_sku</th>\n",
+       "      <th>p2w_sku</th>\n",
+       "      <th>p3w_sku</th>\n",
+       "      <th>p4w_sku</th>\n",
+       "      <th>p5w_sku</th>\n",
+       "      <th>p6w_sku</th>\n",
+       "      <th>p7w_sku</th>\n",
+       "      <th>p8w_sku</th>\n",
+       "      <th>insert_id</th>\n",
+       "      <th>매장명</th>\n",
+       "      <th>지역구</th>\n",
+       "      <th>업종</th>\n",
+       "      <th>가입일</th>\n",
+       "      <th>첫발주일</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>owne</td>\n",
+       "      <td>토리아에즈한양대</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>일식</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>None</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>owne</td>\n",
+       "      <td>토리아에즈한양대</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>일식</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>None</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID activity_option sales_activities sales_date_ymd  \\\n",
+       "0       381  2062599079            첫 발주             품목수취     2023-03-22   \n",
+       "1       382  2062599079           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m7w_sales  m6w_sales  m5w_sales  m4w_sales  m3w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   m2w_sales  m1w_sales  p1w_sales  p2w_sales  p3w_sales  p4w_sales  \\\n",
+       "0        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "1        0.0        0.0        0.0        0.0        0.0        0.0   \n",
+       "\n",
+       "   p5w_sales  p6w_sales  p7w_sales  p8w_sales  m8w_sku  m7w_sku  m6w_sku  \\\n",
+       "0        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "1        0.0        0.0        0.0        0.0        0        0        0   \n",
+       "\n",
+       "   m5w_sku  m4w_sku  m3w_sku  m2w_sku  m1w_sku  p1w_sku  p2w_sku  p3w_sku  \\\n",
+       "0        0        0        0        0        0        0        0        0   \n",
+       "1        0        0        0        0        0        0        0        0   \n",
+       "\n",
+       "   p4w_sku  p5w_sku  p6w_sku  p7w_sku  p8w_sku insert_id       매장명  지역구  업종  \\\n",
+       "0        0        0        0        0        0      owne  토리아에즈한양대  성동구  일식   \n",
+       "1        0        0        0        0        0      owne  토리아에즈한양대  성동구  일식   \n",
+       "\n",
+       "          가입일  첫발주일  \n",
+       "0  2023-03-24  None  \n",
+       "1  2023-03-24  None  "
+      ]
+     },
+     "execution_count": 34,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "update_table_fn"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 35,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "update_table_fn = update_table_fn[['sales_no', 'CUST_ID', '매장명', '업종', '지역구', '가입일', '첫발주일', 'insert_id', 'activity_option', 'sales_activities', 'sales_date_ymd'\n",
+    "                                   , 'm8w_sales', 'm8w_sku', 'm7w_sales', 'm7w_sku', 'm6w_sales', 'm6w_sku', 'm5w_sales', 'm5w_sku'\n",
+    "                                   , 'm4w_sales', 'm4w_sku', 'm3w_sales', 'm3w_sku', 'm2w_sales', 'm2w_sku', 'm1w_sales', 'm1w_sku'\n",
+    "                                   , 'p1w_sales', 'p1w_sku', 'p2w_sales', 'p2w_sku', 'p3w_sales', 'p3w_sku', 'p4w_sales', 'p4w_sku'\n",
+    "                                   , 'p5w_sales', 'p5w_sku', 'p6w_sales', 'p6w_sku', 'p7w_sales', 'p7w_sku', 'p8w_sales', 'p8w_sku']]\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 36,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "update_table_fn.rename(columns={'매장명':'BUSINESS_NAME'\n",
+    "                                , '업종': 'ER_CTG_NAME'\n",
+    "                                , '지역구' : 'AREA_GU'\n",
+    "                                , '가입일' : 'REG_DATE_TC'\n",
+    "                                , '첫발주일' : 'FIRST_ORDER_DATE'\n",
+    "                                }, inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 37,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>sales_no</th>\n",
+       "      <th>CUST_ID</th>\n",
+       "      <th>BUSINESS_NAME</th>\n",
+       "      <th>ER_CTG_NAME</th>\n",
+       "      <th>AREA_GU</th>\n",
+       "      <th>REG_DATE_TC</th>\n",
+       "      <th>FIRST_ORDER_DATE</th>\n",
+       "      <th>insert_id</th>\n",
+       "      <th>activity_option</th>\n",
+       "      <th>sales_activities</th>\n",
+       "      <th>sales_date_ymd</th>\n",
+       "      <th>m8w_sales</th>\n",
+       "      <th>m8w_sku</th>\n",
+       "      <th>m7w_sales</th>\n",
+       "      <th>m7w_sku</th>\n",
+       "      <th>m6w_sales</th>\n",
+       "      <th>m6w_sku</th>\n",
+       "      <th>m5w_sales</th>\n",
+       "      <th>m5w_sku</th>\n",
+       "      <th>m4w_sales</th>\n",
+       "      <th>m4w_sku</th>\n",
+       "      <th>m3w_sales</th>\n",
+       "      <th>m3w_sku</th>\n",
+       "      <th>m2w_sales</th>\n",
+       "      <th>m2w_sku</th>\n",
+       "      <th>m1w_sales</th>\n",
+       "      <th>m1w_sku</th>\n",
+       "      <th>p1w_sales</th>\n",
+       "      <th>p1w_sku</th>\n",
+       "      <th>p2w_sales</th>\n",
+       "      <th>p2w_sku</th>\n",
+       "      <th>p3w_sales</th>\n",
+       "      <th>p3w_sku</th>\n",
+       "      <th>p4w_sales</th>\n",
+       "      <th>p4w_sku</th>\n",
+       "      <th>p5w_sales</th>\n",
+       "      <th>p5w_sku</th>\n",
+       "      <th>p6w_sales</th>\n",
+       "      <th>p6w_sku</th>\n",
+       "      <th>p7w_sales</th>\n",
+       "      <th>p7w_sku</th>\n",
+       "      <th>p8w_sales</th>\n",
+       "      <th>p8w_sku</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>381</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>토리아에즈한양대</td>\n",
+       "      <td>일식</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>None</td>\n",
+       "      <td>owne</td>\n",
+       "      <td>첫 발주</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-22</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>382</td>\n",
+       "      <td>2062599079</td>\n",
+       "      <td>토리아에즈한양대</td>\n",
+       "      <td>일식</td>\n",
+       "      <td>성동구</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>None</td>\n",
+       "      <td>owne</td>\n",
+       "      <td>품목 확장</td>\n",
+       "      <td>품목수취</td>\n",
+       "      <td>2023-03-24</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   sales_no     CUST_ID BUSINESS_NAME ER_CTG_NAME AREA_GU REG_DATE_TC  \\\n",
+       "0       381  2062599079      토리아에즈한양대          일식     성동구  2023-03-24   \n",
+       "1       382  2062599079      토리아에즈한양대          일식     성동구  2023-03-24   \n",
+       "\n",
+       "  FIRST_ORDER_DATE insert_id activity_option sales_activities sales_date_ymd  \\\n",
+       "0             None      owne            첫 발주             품목수취     2023-03-22   \n",
+       "1             None      owne           품목 확장             품목수취     2023-03-24   \n",
+       "\n",
+       "   m8w_sales  m8w_sku  m7w_sales  m7w_sku  m6w_sales  m6w_sku  m5w_sales  \\\n",
+       "0        0.0        0        0.0        0        0.0        0        0.0   \n",
+       "1        0.0        0        0.0        0        0.0        0        0.0   \n",
+       "\n",
+       "   m5w_sku  m4w_sales  m4w_sku  m3w_sales  m3w_sku  m2w_sales  m2w_sku  \\\n",
+       "0        0        0.0        0        0.0        0        0.0        0   \n",
+       "1        0        0.0        0        0.0        0        0.0        0   \n",
+       "\n",
+       "   m1w_sales  m1w_sku  p1w_sales  p1w_sku  p2w_sales  p2w_sku  p3w_sales  \\\n",
+       "0        0.0        0        0.0        0        0.0        0        0.0   \n",
+       "1        0.0        0        0.0        0        0.0        0        0.0   \n",
+       "\n",
+       "   p3w_sku  p4w_sales  p4w_sku  p5w_sales  p5w_sku  p6w_sales  p6w_sku  \\\n",
+       "0        0        0.0        0        0.0        0        0.0        0   \n",
+       "1        0        0.0        0        0.0        0        0.0        0   \n",
+       "\n",
+       "   p7w_sales  p7w_sku  p8w_sales  p8w_sku  \n",
+       "0        0.0        0        0.0        0  \n",
+       "1        0.0        0        0.0        0  "
+      ]
+     },
+     "execution_count": 37,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "update_table_fn"
+   ]
+  },
+  {
+   "attachments": {},
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Real"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 57,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Connect DB\n",
+    "import urllib.parse\n",
+    "from sqlalchemy import create_engine\n",
+    "\n",
+    "\n",
+    "user = 'orderherodl'\n",
+    "pwd_ = 'OhejGL@JFH2023'\n",
+    "pwd = urllib.parse.quote(pwd_)\n",
+    "host = 'orderherodl.cafe24.com'\n",
+    "db = 'orderherodl'\n",
+    "\n",
+    "engine = create_engine(f'mysql+pymysql://{user}:{pwd}@{host}/{db}')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 58,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "update_table_fn.to_sql('TB_SALES_GRAFANA', con=engine, if_exists='append', index=False)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "name",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.9.7"
+  },
+  "orig_nbformat": 4,
+  "vscode": {
+   "interpreter": {
+    "hash": "b65af54d31b884ac9ff4883fbecba8a4fbc17a067850a841f020c3656c8e9c03"
+   }
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
